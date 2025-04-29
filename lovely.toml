@@ -1,0 +1,12 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+[[patches]]
+[patches.pattern]
+target = "tag.lua"
+pattern = "self.ability = {"
+position = "before"
+payload = '''self.count = _tag.count or 1'''
+match_indent = true
