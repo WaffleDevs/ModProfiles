@@ -1,12 +1,34 @@
 [manifest]
 version = "1.0.0"
 dump_lua = true
-priority = -10
+priority = -11
 
 [[patches]]
 [patches.pattern]
-target = "tag.lua"
-pattern = "self.ability = {"
-position = "before"
-payload = '''self.count = _tag.count or 1'''
+target = '=[SMODS _ "src/ui.lua"]'
+pattern = '''{
+    label = localize('b_mods'),
+    chosen = true,
+    tab_definition_function = function()
+        return SMODS.GUI.DynamicUIManager.initTab({
+            updateFunctions = {
+                modsList = G.FUNCS.update_mod_list,
+            },
+            staticPageDefinition = SMODS.GUI.staticModListContent()
+        })
+    end
+},'''
+position = "after"
+payload = '''{
+    label = localize('b_mod_profiles'),
+    chosen = false,
+    tab_definition_function = function()
+        return SMODS.GUI.DynamicUIManager.initTab({
+            updateFunctions = {
+                modsList = G.FUNCS.update_profile_list,
+            },
+            staticPageDefinition = ModProfiles.UI.staticModListContent()
+        })
+    end
+},'''
 match_indent = true
