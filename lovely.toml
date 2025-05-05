@@ -32,3 +32,9 @@ payload = '''{
     end
 },'''
 match_indent = true
+
+[[patches]]
+[patches.module]
+source = "nativefs.lua"
+before = "io.lua"
+name = "nativefs"

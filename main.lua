@@ -16,8 +16,7 @@
 
  Load:
     - Delete all non-simlink folders and files
-    - Copy all files from Global
-    - Copy all files from Profile -- Skipping any that are from Global
+    - Copy all files from Profile
 
 --]]
 
@@ -26,17 +25,21 @@ ModProfiles = {}
 ModProfiles.profiles_dir = love.filesystem.getSaveDirectory() .. "/mod_profiles"
 ModProfiles.mods_dir = love.filesystem.getSaveDirectory() .. "/Mods"
 
-ModProfiles.global_files = {}
+ModProfiles.restart = false
 ModProfiles.profiles = {}
 ModProfiles.active_profile = nil
 
-local function safeFunc(func, path, data)
-    if string.find(path,ModProfiles.profiles_dir) == 1 or string.find(path,ModProfiles.mods_dir) == 1 then
-        return func(path,data)
-    else
-        error("Path outside of allowed folder: " ..path)
-    end
-end
+local io_thread = love.thread.newThread(SMODS.current_mod.path:match("Mods/%a*/").."io.lua")
+local io_channel = love.thread.getChannel('io_channel')
+io_thread:start()
+
+ModProfiles.io_thread = {
+    thread = io_thread,
+    channel = io_channel,
+    active = false,
+}
+
+
 local function getProfiles() 
     ModProfiles.profiles = {}
     local profile_count = 0
@@ -46,7 +49,7 @@ local function getProfiles()
             print('Odd file in Profiles Dir. ' .. v.name)
         end
 
-        if v.type == "directory" and v.name ~= "Global" then
+        if v.type == "directory" then
             count = profile_count + 1
             ModProfiles.profiles[#ModProfiles.profiles+1] = {
                 name = v.name,
@@ -72,44 +75,23 @@ local function getProfiles()
 end
 
 function recursiveCopy(old_dir, new_dir, skip_extra, depth)
-    depth = depth or 7
-    for k, v in ipairs(NFS.getDirectoryItemsInfo(old_dir)) do
-        if (ModProfiles.global_files and not ModProfiles.global_files[v.name]) or (not ModProfiles.global_files) then 
-            if v.type == "directory" then
-                NFS.createDirectory(new_dir.."/"..v.name)
-                if depth > 0 then 
-                    recursiveCopy(old_dir.."/"..v.name, new_dir.."/"..v.name, depth-1) 
-                end
-            elseif not (skip_extra and (v.type == "symlink" or (v.name == "lovely" and depth == 7))) then
-                local file = NFS.read(old_dir.."/"..v.name)
-                NFS.write(new_dir.."/"..v.name, file)
-            end
-        end
-        
-    end
+    io_channel:push({
+        type="copy",
+        profile=old_dir,
+        copy_params={
+            target=new_dir,
+            skip_extra=skip_extra
+        }
+    })
 end
-function recursiveDelete(profile_dir, depth)
-    depth = depth or 7
-
-    failed = 0
-    succeeded = 0
-    
-    for k, v in ipairs(NFS.getDirectoryItemsInfo(profile_dir)) do
-        if v.type ~= "symlink" then
-            if v.type == "directory" then
-                if depth > 0 then  
-                    recursiveDelete(profile_dir.."/"..v.name, depth-1) 
-                    
-                    local success = NFS.remove(profile_dir.."/"..v.name)
-                    if success then succeeded = succeeded + 1 else failed = failed + 1 end
-                end
-            else
-                local success = NFS.remove(profile_dir.."/"..v.name)
-                if success then succeeded = succeeded + 1 else failed = failed + 1 end
-            end
-        end
-    end
-    return {failed = failed, succeeded = succeeded}
+function recursiveDelete(profile_dir, delete_parent)
+    io_channel:push({
+        type="delete",
+        profile=profile_dir,
+        delete_params={
+            delete_parent=delete_parent
+        }
+    })
 end
 
 local function init()
@@ -137,16 +119,6 @@ local function createNewProfile(name)
     recursiveCopy(ModProfiles.mods_dir, profile_path, true)
 end
 
-local function getGlobalMods()
-    local globals = {}
-    for k, v in ipairs(NFS.getDirectoryItemsInfo(ModProfiles.profiles_dir.."/Global")) do
-        if v.type == "directory" then
-            globals[v.name] = true
-        end
-    end
-    return globals
-end
-
 local function loadProfile(profile)
     local profile_path = ModProfiles.profiles_dir.."/"..profile
     local profile_folder = NFS.getInfo(profile_path, "directory")
@@ -159,14 +131,11 @@ local function loadProfile(profile)
     ModProfiles.active_profile = profile
     print(profile)
     NFS.write(ModProfiles.profiles_dir.."/data", ModProfiles.active_profile)
+
     recursiveDelete(ModProfiles.mods_dir)
 
-    ModProfiles.global_files = getGlobalMods()
-
-    recursiveCopy(ModProfiles.profiles_dir.."/Global/", ModProfiles.mods_dir)
-
     recursiveCopy(profile_path, ModProfiles.mods_dir, nil)
-
+    ModProfiles.restart = true
 
 end
 local function deleteProfile(profile)
@@ -183,17 +152,38 @@ local function deleteProfile(profile)
         NFS.write(ModProfiles.profiles_dir.."/data", ModProfiles.active_profile)
     end
 
-    recursiveDelete(profile_path)
-    NFS.remove(profile_path)
+    recursiveDelete(profile_path,true)
 end
 
+local old_game_update = Game.update
 
 ModProfiles.createNewProfile = createNewProfile
 ModProfiles.loadProfile = loadProfile
 ModProfiles.deleteProfile = deleteProfile
 ModProfiles.getProfiles = getProfiles
-ModProfiles.safeFunc = safeFunc
-ModProfiles.getGlobalMods = getGlobalMods
+
+local previous_count = 0
+function Game:update(dt)
+    if previous_count ~= ModProfiles.io_thread.channel:getCount() then -- After any process ends
+        previous_count = ModProfiles.io_thread.channel:getCount()
+
+        G.FUNCS.exit_confirmation()
+    end
+    if ModProfiles.io_thread.channel:getCount() == 0 and ModProfiles.io_thread.active then -- Inactive
+        print(ModProfiles.io_thread.channel:getCount())
+        
+        if ModProfiles.restart then 
+            --SMODS.restart_game() 
+            print("RESTST")
+        end
+    end
+
+    
+    
+    ModProfiles.io_thread.active = ModProfiles.io_thread.channel:getCount() > 0
+    --print(ModProfiles.io_thread.channel:getCount())
+    old_game_update(self,dt)
+end
 
 NFS.load(SMODS.current_mod.path.."/ui.lua")()
 

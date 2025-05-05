@@ -3,7 +3,6 @@
 local function recalculateProfilesList(page)
     page = page or 1
     ModProfiles.getProfiles()
-    ModProfiles.global_files = ModProfiles.getGlobalMods()
 
     local profilesPerPage = 4
     local startIndex = (page - 1) * profilesPerPage + 1
@@ -18,21 +17,12 @@ local function recalculateProfilesList(page)
     return currentPage, pageOptions, showingList, startIndex, endIndex, profilesPerPage
 end
 
-local function initProfileUiFunctions()
-    -- for _, profileInfo in pairs(ModProfiles.profiles) do
-    --     if not G.FUNCS["openProfileFolder_" .. profileInfo.name] then 
-    --         G.FUNCS["openProfileFolder_" .. profileInfo.name] = function(e)
-    --             love.system.openURL(ModProfiles.profiles_dir.."/"..profileInfo.name)
-    --         end
-    --     end
-    -- end
-end
-
 local function createClickableProfileBox(profileInfo, scale)
     local is_active = profileInfo.name == ModProfiles.active_profile
 
     local button = UIBox_button {
-        label = { " " .. profileInfo.name .. " " },
+        id = is_active and "active_profile_box" or nil,
+        label = { profileInfo.name },
         shadow = true,
         scale = scale,
         colour = is_active and G.C.UI.TEXT_DARK or G.C.BOOSTER,
@@ -46,7 +36,7 @@ local function createClickableProfileBox(profileInfo, scale)
         label = { localize('b_profile_delete') },
         shadow = true,
         scale = scale*0.85,
-        colour = G.C.RED,
+        colour = is_active and darken(G.C.RED, .4) or G.C.RED,
         ref_table = profileInfo,
         button = "delete_profile_ui",
         minh = scale*1.5,
@@ -56,9 +46,9 @@ local function createClickableProfileBox(profileInfo, scale)
         label = { localize('b_profile_save') },
         shadow = true,
         scale = scale*0.85,
-        colour = is_active and G.C.UI.TEXT_DARK or G.C.FILTER,
+        colour = is_active and darken(G.C.FILTER, .3) or G.C.FILTER,
         ref_table = profileInfo,
-        button = not is_active and "save_profile_ui",
+        button = "save_profile_ui",
         minh = scale*1.5,
         minw = 1.3, col = true
     })
@@ -75,7 +65,6 @@ local function createClickableProfileBox(profileInfo, scale)
 
     if is_active and true then
         load.nodes[1].config.button = nil
-        save.nodes[1].config.button = nil
     end
 
     return {
@@ -85,11 +74,12 @@ local function createClickableProfileBox(profileInfo, scale)
             { n = G.UIT.C, config = { padding = 0.3, align = "cm" }, nodes = {  } },
             { n = G.UIT.C, config = { padding = 0, align = "cm" }, nodes = { delete } },
             { n = G.UIT.C, config = { padding = 0.3, align = "cm" }, nodes = {  } },
-            { n = G.UIT.C, config = { padding = 0, align = "cm" }, nodes = { button } },
+            { n = G.UIT.C, config = { padding = 0, align = "cm" }, nodes = { button }} ,
             { n = G.UIT.C, config = { padding = 0.3, align = "cm" }, nodes = {  } },
             { n = G.UIT.C, config = { padding = 0, align = "cm" }, nodes = { save } },
             { n = G.UIT.C, config = { padding = 0.1, align = "cm" }, nodes = {  } },
             { n = G.UIT.C, config = { padding = 0, align = "cm" }, nodes = { load } },
+            
     }}
 end
 
@@ -104,13 +94,13 @@ function staticModListContent()
             minw = 10,
             align = "tm",
             padding = 0.2,
-            colour = G.C.BLACK
+            colour = G.C.BLACK, id="top_level_profiles_tab"
         },
         nodes = {
             -- row container
             {
                 n = G.UIT.R,
-                config = { align = "cm", padding = 0.05 },
+                config = { align = "cm", padding = 0.05},
                 nodes = {
                     -- column container
                     {
@@ -256,6 +246,8 @@ function dynamicModListContent(page)
         end
     end
 
+    
+
     return {
         n = G.UIT.C,
         config = {
@@ -374,8 +366,6 @@ G.FUNCS.save_profile = function (e)
    G.FUNCS.exit_confirmation(e)
 end
 
-
-
 G.FUNCS.delete_profile_ui = function (e)
     local profileInfo = e.config.ref_table
     G.FUNCS.overlay_menu({
@@ -403,8 +393,8 @@ function checkEdits(profile)
     local result = true
 
     for _, m in ipairs(NFS.getDirectoryItemsInfo(ModProfiles.mods_dir)) do
-        if (not (m.type == "symlink" or m.name == "lovely")) and ((ModProfiles.global_files and not ModProfiles.global_files[m.name]) or (not ModProfiles.global_files)) then
-            if not NFS.getInfo(ModProfiles.profiles_dir.."/"..ModProfiles.active_profile.."/"..m.name) and not ModProfiles.global_files[m.name] then 
+        if (not (m.type == "symlink" or m.name == "lovely")) then
+            if not NFS.getInfo(ModProfiles.profiles_dir.."/"..ModProfiles.active_profile.."/"..m.name) then 
                 print("Mods/"..m.name)
                 result = false 
             else
@@ -445,7 +435,6 @@ G.FUNCS.load_profile = function (e)
    ModProfiles.loadProfile(profileInfo.name)
    play_sound('crumple1', 0.8, 1);
    G.FUNCS.exit_confirmation(e)
-   SMODS.restart_game()
 end
 
 G.FUNCS.new_profile_ui = function ()
@@ -456,7 +445,7 @@ G.FUNCS.new_profile_ui = function ()
         no_back = true,
         contents = {
             {n = G.UIT.R, config = { padding = 0, align = "cm" }, nodes = {
-                {n=G.UIT.R, config={align = "cm", padding = 0.12, emboss = 0.1, colour = G.C.L_BLACK, r = 0.1}, nodes={
+                {n=G.UIT.R, config={align = "cm", padding = 0.12, emboss = 0.1, colour =darken( G.C.L_BLACK,.2), r = 0.1}, nodes={
                     {n = G.UIT.T, config = {
                         id="testt",
                         text = "Set Profile Name",
@@ -514,12 +503,10 @@ G.FUNCS.openProfilesDirectory = function(e)
     love.system.openURL(ModProfiles.profiles_dir)
 end
 
-initProfileUiFunctions()
 
 ModProfiles.checkEdits = checkEdits
 ModProfiles.UI = {}
 
-ModProfiles.UI.initProfileUiFunctions = initProfileUiFunctions
 ModProfiles.UI.staticModListContent = staticModListContent
 ModProfiles.UI.dynamicModListContent = dynamicModListContent
 
