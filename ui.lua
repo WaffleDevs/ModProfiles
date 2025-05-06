@@ -208,7 +208,6 @@ end
 function dynamicModListContent(page)
     local scale = 0.75
     local _, __, showingList, startIndex, endIndex, profilesPerPage = recalculateProfilesList(page)
-
     local modNodes = {}
 
     -- If no mods are loaded, show a default message
@@ -279,7 +278,7 @@ local function createProfileConfirmationDialog(args)
                     align = "tm"
                 },
                 nodes = {
-                    {
+                    args.custom_node and args.custom_node or {
                         n = G.UIT.R,
                         config = { align = "cm", padding = 0.3 },
                         nodes = {
@@ -395,13 +394,13 @@ function checkEdits(profile)
     for _, m in ipairs(NFS.getDirectoryItemsInfo(ModProfiles.mods_dir)) do
         if (not (m.type == "symlink" or m.name == "lovely")) then
             if not NFS.getInfo(ModProfiles.profiles_dir.."/"..ModProfiles.active_profile.."/"..m.name) then 
-                print("Mods/"..m.name)
+                print(m.name)
                 result = false 
             else
                 for _, v in ipairs(NFS.getDirectoryItemsInfo(ModProfiles.mods_dir.."/"..m.name)) do
                     if not (v.type == "symlink" or v.name == "lovely") then
                         if not NFS.getInfo(ModProfiles.profiles_dir.."/"..ModProfiles.active_profile.."/"..m.name.."/"..v.name) then 
-                            print("/"..m.name.."/"..v.name)
+                            print(m.name.."/"..v.name)
                             result = false 
                         end
                     end
@@ -420,10 +419,51 @@ G.FUNCS.load_profile_ui = function (e)
     if is_changed then
         text = "You have unsaved changes. " .. text
     end
+    local has_smods = profileInfo.has_smods
+
+    local main_nodes = {
+        is_changed and {n = G.UIT.T, config = {
+            text = "You have unsaved changes.",
+            shadow = true,
+            scale = 0.45,
+            colour = G.C.RED,
+        }} or nil,
+        {n = G.UIT.T, config = {
+            text = "Are you sure you want to load?",
+            shadow = true,
+            scale = 0.45,
+            colour = G.C.UI.TEXT_LIGHT,
+        }}
+    }
+    if is_changed or has_smods ~= 1 then
+        play_sound("voice10", 1)
+    end
+    if has_smods ~= 1 then 
+        main_nodes = {
+            {n=G.UIT.O, config={
+                object = DynaText({
+                    string = {has_smods ~= 2 and "WARNING: This profile does not has SMODS. ModProfiles will NOT work." or "WARNING: This profile has an old version of SMODS. ModProfiles might not work."}, 
+                    colours = {has_smods ~= 2 and G.C.RED or G.C.FILTER}, 
+                    shadow = true, 
+                    bump = true,
+                    spacing = 1,
+                    scale = 0.45,
+                    silent = true})
+            }}
+        }
+    end
+
+    local node = {
+        n = G.UIT.R,
+        config = { align = "cm", padding = 0.3 },
+        nodes = main_nodes
+    }
+
+    
     G.FUNCS.overlay_menu({
         definition = createProfileConfirmationDialog({
             profile = profileInfo,
-            question_text = text,
+            custom_node = node,
             confirm_func = "load_profile",
             fccc = is_changed
         })
@@ -447,7 +487,7 @@ G.FUNCS.new_profile_ui = function ()
             {n = G.UIT.R, config = { padding = 0, align = "cm" }, nodes = {
                 {n=G.UIT.R, config={align = "cm", padding = 0.12, emboss = 0.1, colour =darken( G.C.L_BLACK,.2), r = 0.1}, nodes={
                     {n = G.UIT.T, config = {
-                        id="testt",
+                        id="set_profile_text",
                         text = "Set Profile Name",
                         shadow = true,
                         scale = 0.45,
@@ -488,7 +528,7 @@ G.FUNCS.new_profile_ui = function ()
         
 
 })
-G.OVERLAY_MENU:get_UIE_by_ID("testt").UIBox:recalculate()
+G.OVERLAY_MENU:get_UIE_by_ID("set_profile_text").UIBox:recalculate()
 end
 G.FUNCS.new_profile = function(args)
     ModProfiles.createNewProfile(args.config.ref_table.name)

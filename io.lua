@@ -4,6 +4,8 @@ CHANNEL = love.thread.getChannel("io_channel")
 profiles_dir = love.filesystem.getSaveDirectory() .. "/mod_profiles"
 mods_dir = love.filesystem.getSaveDirectory() .. "/Mods"
 
+mod_name = ...
+
 local function safeFunc(func, path, data)
     if string.find(path,profiles_dir) == 1 or string.find(path,mods_dir) == 1 then
         return func(path,data)
@@ -12,30 +14,46 @@ local function safeFunc(func, path, data)
     end
 end
 
+--[[
+    Loop old_dir for all files.
+    IF dir, create it in new dir, run recursive in it.
 
-function recursiveCopy(old_dir, new_dir, skip_extra, depth)
+    If file, write it to new dir
+    
+
+
+]]--
+function recursiveCopy(old_dir, new_dir, depth)
     depth = depth or 7
-    for k, v in ipairs(NFS.getDirectoryItemsInfo(old_dir)) do
-            if v.type == "directory" then
-                safeFunc(NFS.createDirectory,new_dir.."/"..v.name)
-                if depth > 0 then 
-                    recursiveCopy(old_dir.."/"..v.name, new_dir.."/"..v.name, depth-1) 
-                end
-            elseif not (skip_extra and (v.type == "symlink" or (v.name == "lovely" and depth == 7))) then
-                local file = safeFunc(NFS.read,old_dir.."/"..v.name)
-                safeFunc(NFS.write,new_dir.."/"..v.name, file)
+    
+    for _, m in ipairs(NFS.getDirectoryItemsInfo(old_dir)) do
+        local current_dir = old_dir .. "/" .. m.name
+        local edit_dir = new_dir .. "/" .. m.name
+        if m.type == "directory" and (m.name ~= mod_name and m.name ~= "lovely") then
+            safeFunc(NFS.createDirectory, edit_dir)
+            if depth >= 0 then
+                recursiveCopy(current_dir, edit_dir, depth-1)
             end
+        elseif m.type == "file" then
+            local file,err= NFS.read(current_dir)
+
+            if file ~= nil then 
+                safeFunc(NFS.write, edit_dir, file)
+            else 
+                error(err)
+            end
+        end
     end
 end
 function recursiveDelete(profile_dir, delete_parent, depth)
-    depth = depth or 7
+    depth = depth or 9
 
     failed = 0
     succeeded = 0
     
     for k, v in ipairs(NFS.getDirectoryItemsInfo(profile_dir)) do
-        if v.type ~= "symlink" then
-            if v.type == "directory" then
+        if v.type ~= "symlink" and (v.name ~= "lovely" and depth == 9) then
+            if v.type == "directory" and v.name ~= mod_name then
                 if depth > 0 then  
                     recursiveDelete(profile_dir.."/"..v.name, delete_parent, depth-1) 
                     
@@ -52,7 +70,6 @@ function recursiveDelete(profile_dir, delete_parent, depth)
         safeFunc(NFS.remove,profile_dir)
     end
 
-    return {failed = failed, succeeded = succeeded}
 end
 
 ---@class IO_Request: table
@@ -74,8 +91,10 @@ while true do
         end
         if request.type == "copy" then
             local target = request.copy_params.target
-            local skip_extra = request.copy_params.skip_extra
-            recursiveCopy(path, target, skip_extra)
+            recursiveCopy(path, target)
+        end
+        if request.type == "kill" then
+            return
         end
     end
 end
