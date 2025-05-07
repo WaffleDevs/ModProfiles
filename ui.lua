@@ -392,7 +392,7 @@ function checkEdits(profile)
     local result = true
 
     for _, m in ipairs(NFS.getDirectoryItemsInfo(ModProfiles.mods_dir)) do
-        if (not (m.type == "symlink" or m.name == "lovely")) then
+        if (not (m.type == "symlink" or m.name == "lovely" or m.name == ModProfiles.mod_folder)) then
             if not NFS.getInfo(ModProfiles.profiles_dir.."/"..ModProfiles.active_profile.."/"..m.name) then 
                 print(m.name)
                 result = false 

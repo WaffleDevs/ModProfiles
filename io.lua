@@ -1,11 +1,11 @@
-local NFS = require("Mods/ModProfiles/nativefs")
+mod_name = ...
+local NFS = require("Mods/"..mod_name.."/nativefs")
 
 CHANNEL = love.thread.getChannel("io_channel")
 OUT = love.thread.getChannel("io_out")
 profiles_dir = love.filesystem.getSaveDirectory() .. "/mod_profiles"
 mods_dir = love.filesystem.getSaveDirectory() .. "/Mods"
 
-mod_name = ...
 
 local function safeFunc(func, path, data)
     --CHANNEL:push((data and "true" or "").." call on " .. path)

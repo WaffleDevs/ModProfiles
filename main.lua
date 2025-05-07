@@ -28,12 +28,11 @@ ModProfiles.mods_dir = love.filesystem.getSaveDirectory() .. "/Mods"
 ModProfiles.restart = false
 ModProfiles.profiles = {}
 ModProfiles.active_profile = nil
-
-local io_thread = love.thread.newThread(SMODS.current_mod.path:match("Mods/%a*/").."io.lua")
+ModProfiles.mod_folder = SMODS.current_mod.path:match("Mods/([%p%w%s]*)/")
+local io_thread = love.thread.newThread("Mods/"..ModProfiles.mod_folder.."/io.lua")
 local io_channel = love.thread.getChannel('io_channel')
 local io_out = love.thread.getChannel('io_out')
-io_thread:start(SMODS.current_mod.path:match("Mods/(%a*)/"))
-local mod_name = SMODS.current_mod.path:match("Mods/(%a*)/")
+io_thread:start(ModProfiles.mod_folder)
 ModProfiles.io_thread = {
     thread = io_thread,
     channel = io_channel,
@@ -185,6 +184,8 @@ local function init()
     else
         NFS.write(ModProfiles.profiles_dir.."/data","nil")
     end
+
+    sendInfoMessage("Active Profile: " .. (ModProfiles.active_profile or "None"), "ModProfiles-Init")
 end
 
 local function createNewProfile(name) 
@@ -237,7 +238,6 @@ ModProfiles.loadProfile = loadProfile
 ModProfiles.deleteProfile = deleteProfile
 ModProfiles.getProfiles = getProfiles
 
-local previous_count = 0
 local old_game_update = Game.update
 function Game:update(dt)
 
