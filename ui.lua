@@ -25,7 +25,7 @@ local function createClickableProfileBox(profileInfo, scale)
         label = { profileInfo.name },
         shadow = true,
         scale = scale,
-        colour = is_active and G.C.UI.TEXT_DARK or G.C.BOOSTER,
+        colour = is_active and G.C.BOOSTER or G.C.UI.TEXT_DARK,--G.C.UI.TEXT_DARK or G.C.BOOSTER,
         text_colour = G.C.UI.TEXT_LIGHT,
         ref_table = profileInfo,
         button = "openProfileFolder",
@@ -58,7 +58,7 @@ local function createClickableProfileBox(profileInfo, scale)
         scale = scale*0.85,
         colour = is_active and G.C.UI.TEXT_DARK or G.C.GREEN,
         ref_table = profileInfo,
-        button = not is_active and "load_profile_ui" or "",
+        button = not is_active and "load_modprofile_ui" or "",
         minh = scale*1.5,
         minw = 1.3, col = true
     })--- 
@@ -389,19 +389,21 @@ function checkEdits(profile)
         return true
     end
 
-    local result = true
-
+    local result = false
+    local modified_mods = {}
     for _, m in ipairs(NFS.getDirectoryItemsInfo(ModProfiles.mods_dir)) do
         if (not (m.type == "symlink" or m.name == "lovely" or m.name == ModProfiles.mod_folder)) then
             if not NFS.getInfo(ModProfiles.profiles_dir.."/"..ModProfiles.active_profile.."/"..m.name) then 
                 print(m.name)
-                result = false 
+                result = true 
+                modified_mods[#modified_mods+1] = m.name
             else
                 for _, v in ipairs(NFS.getDirectoryItemsInfo(ModProfiles.mods_dir.."/"..m.name)) do
                     if not (v.type == "symlink" or v.name == "lovely") then
                         if not NFS.getInfo(ModProfiles.profiles_dir.."/"..ModProfiles.active_profile.."/"..m.name.."/"..v.name) then 
                             print(m.name.."/"..v.name)
-                            result = false 
+                            result = true 
+                            modified_mods[#modified_mods+1] = m.name
                         end
                     end
                 end
@@ -409,13 +411,13 @@ function checkEdits(profile)
         end
     end
 
-    return result
+    return result, modified_mods
 end
 
-G.FUNCS.load_profile_ui = function (e)
+G.FUNCS.load_modprofile_ui = function (e)
     local profileInfo = e.config.ref_table
     local text = "Are you sure you want to load?"
-    local is_changed = not checkEdits(profileInfo.name)
+    local is_changed, files = checkEdits(profileInfo.name)
     if is_changed then
         text = "You have unsaved changes. " .. text
     end
@@ -452,11 +454,147 @@ G.FUNCS.load_profile_ui = function (e)
             }}
         }
     end
+    
+    local edited_mods_node = {
+        n = G.UIT.C,
+        config = { align = "cm", padding = 0.1},
+        nodes = {
+            {
+                n = G.UIT.R,
+                config = { align = "cm", padding = 0.1 },
+                nodes = {
+                    {n = G.UIT.T, config = {
+                        align = "cm", 
+                        text = "Modified Mods: ",
+                        shadow = true,
+                        scale = 0.45,
+                        colour = G.C.UI.TEXT_LIGHT,
+                    }},
+                    
+                },
+            },
+            {
+                n = G.UIT.R,
+                config = { align = "cm", padding = 0.1 },
+                nodes = {
+                    {
+                        n = G.UIT.C,
+                        config = { align = "cl", padding = 0.1, minw = 5},
+                        nodes = {
+                            
+                        }
+                    },
+                    {
+                        n = G.UIT.C,
+                        config = { align = "cr", padding = 0.1, minw = 5},
+                        nodes = {
+                           
+                        }
+                    }
+                },
+            },
+        }
+    }
+
+    if is_changed and files then
+        local mods_nodes = {}
+
+        for i = 1, #files, 2 do
+            local file1 = files[i]
+            local file2 = files[i+1] or nil
+
+            edited_mods_node.nodes[2].nodes[1].nodes[#edited_mods_node.nodes[2].nodes[1].nodes+1] = {
+                n = G.UIT.R,
+                config = {padding = 0.1 },
+                nodes = {
+                    {n = G.UIT.T, config = {
+                        text = i .. ": " .. file1,
+                        shadow = true,
+                        scale = 0.45,
+                        colour = G.C.UI.TEXT_LIGHT,
+                        align = "cl",
+                        padding = .1
+                    }},
+                }
+            }
+            if file2 then
+                edited_mods_node.nodes[2].nodes[2].nodes[#edited_mods_node.nodes[2].nodes[1].nodes+1] = {
+                    n = G.UIT.R,
+                    config = {padding = 0.1 },
+                    nodes = {
+                        {n = G.UIT.T, config = {
+                            text = i+1 .. ": " .. file2,
+                            shadow = true,
+                            scale = 0.45,
+                            colour = G.C.UI.TEXT_LIGHT,
+                            align = "cr",
+                            padding = .1
+                        }},
+                    }
+                }
+            end
+            -- edited_mods_node.nodes[#edited_mods_node.nodes+1] = {
+            --     n = G.UIT.R,
+            --     config = {padding = 0.1 },
+            --     nodes = {
+            --         {n = G.UIT.T, config = {
+            --             text = i .. ": " .. file1,
+            --             shadow = true,
+            --             scale = 0.45,
+            --             colour = G.C.UI.TEXT_LIGHT,
+            --             align = "cl",
+            --             padding = .1
+            --         }},
+            --         { n = G.UIT.C, config = { padding = 0.4, align = "cm" }, nodes = {  } },
+            --         { n = G.UIT.C, config = { padding = 0.4, align = "cm" }, nodes = {  } },
+            --         { n = G.UIT.C, config = { padding = 0.4, align = "cm" }, nodes = {  } },
+            --         file2 and {n = G.UIT.T, config = {
+            --             text = i+1 .. ": " .. file2,
+            --             shadow = true,
+            --             scale = 0.45,
+            --             colour = G.C.UI.TEXT_LIGHT,
+            --             align = "cr",
+            --         }} or nil
+            --     }
+            -- }
+        end
+
+        -- edited_mods_node = {
+        --     n = G.UIT.R,
+        --     config = { align = "cm", padding = 0.1 },
+        --     nodes = {
+        --         {n = G.UIT.T, config = {
+        --             text = "Modified Mods: ",
+        --             shadow = true,
+        --             scale = 0.45,
+        --             colour = G.C.UI.TEXT_LIGHT,
+        --         }},
+        --         mods_nodes
+        --     }
+        -- }
+    end
+
 
     local node = {
         n = G.UIT.R,
         config = { align = "cm", padding = 0.3 },
-        nodes = main_nodes
+        nodes = {
+            {
+            n = G.UIT.C,
+            config = { align = "cm", padding = 0.1 },
+            nodes = {
+                {
+                    n = G.UIT.R,
+                    config = { align = "cm", padding = 0.1 },
+                    nodes = main_nodes
+                },
+                is_changed and {
+                    n = G.UIT.R,
+                    config = { align = "cm", padding = 0.3 },
+                    nodes = {edited_mods_node}
+                } or nil
+            }
+        }}
     }
 
     
@@ -464,17 +602,66 @@ G.FUNCS.load_profile_ui = function (e)
         definition = createProfileConfirmationDialog({
             profile = profileInfo,
             custom_node = node,
-            confirm_func = "load_profile",
+            confirm_func = "load_modprofile",
             fccc = is_changed
         })
     })
 end
 
-G.FUNCS.load_profile = function (e)
+G.FUNCS.load_modprofile = function (e)
     local profileInfo = e.config.ref_table
-   ModProfiles.loadProfile(profileInfo.name)
-   play_sound('crumple1', 0.8, 1);
-   G.FUNCS.exit_confirmation(e)
+    ModProfiles.loadProfile(profileInfo.name)
+    play_sound('crumple1', 0.8, 1);
+    --G.FUNCS.exit_confirmation(e)
+    G.FUNCS.overlay_menu({
+        definition = create_UIBox_generic_options({
+            back_func = "exit_confirmation",
+            no_back = true,
+            contents = {
+                {
+                    n = G.UIT.R,
+                    config = {
+                        padding = 0,
+                        align = "tm"
+                    },
+                    nodes = {
+                        {
+                            n = G.UIT.R,
+                            config = { align = "cm", padding = 0.3 },
+                            nodes = {
+                                {n=G.UIT.O, config={
+                                    object = DynaText({
+                                        string = {"Loading profile..."}, 
+                                        colours = {G.C.UI.TEXT_LIGHT}, 
+                                        shadow = true, 
+                                        float = true,
+                                        spacing = 1.5,
+                                        scale = 0.6,
+                                        silent = true})
+                                }}
+                            }
+                        },
+                        {
+                            n = G.UIT.R,
+                            config = { align = "cm", padding = 0.3 },
+                            nodes = {
+                                {n=G.UIT.O, config={
+                                    object = DynaText({
+                                        string = {"The game will restart automatically."}, 
+                                        colours = {G.C.JOKER_GREY}, 
+                                        shadow = true, 
+                                        bump = true,
+                                        spacing = 1,
+                                        scale = 0.45,
+                                        silent = true})
+                                }}
+                            }
+                        },
+                    }
+                }
+            }
+        })
+    })
 end
 
 G.FUNCS.new_profile_ui = function ()

@@ -8,7 +8,6 @@ mods_dir = love.filesystem.getSaveDirectory() .. "/Mods"
 
 
 local function safeFunc(func, path, data)
-    --CHANNEL:push((data and "true" or "").." call on " .. path)
     if string.find(path,profiles_dir) == 1 or string.find(path,mods_dir) == 1 then
         return func(path,data)
     else
@@ -18,18 +17,13 @@ end
 
 
 function recursiveCopy(old_dir, new_dir, depth)
-    --CHANNEL:push('s-------')
-    --CHANNEL:push("call on " .. old_dir)
     depth = depth or 9
     for _, m in ipairs(NFS.getDirectoryItemsInfo(old_dir)) do
         local current_dir = old_dir .. "/" .. m.name
         local edit_dir = new_dir .. "/" .. m.name
-        --CHANNEL:push("c "..current_dir)
-        --CHANNEL:push("e "..edit_dir)
         if m.type == "directory" and (m.name ~= mod_name and ((depth==9 and m.name~="lovely") or depth<9)) then
             if NFS.getInfo(current_dir) then
                 safeFunc(NFS.createDirectory, edit_dir)
-                --CHANNEL:push(current_dir)
                 if depth >= 0 then
                     recursiveCopy(current_dir, edit_dir, depth-1)
                 end
@@ -41,18 +35,12 @@ function recursiveCopy(old_dir, new_dir, depth)
 
                 if file ~= nil then 
                     safeFunc(NFS.write, edit_dir, file)
-                    --CHANNEL:push(current_dir)
                 else 
-                    --CHANNEL:push(err)
                 end
             end
             
         end
     end
-    --CHANNEL:push('fin')
-    --CHANNEL:push('e-------')
-    
-    --if depth==9 then --CHANNEL:push('finfinfinfinfinfinfin') end
 end
 function recursiveDelete(profile_dir, delete_parent, depth)
     depth = depth or 9
