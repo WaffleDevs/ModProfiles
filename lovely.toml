@@ -35,7 +35,8 @@ match_indent = true
 
 [[patches]]
 [patches.pattern]
-target = '=[SMODS _ "src/crash_handler.lua"]'
+#target = '=[SMODS _ "src/crash_handler.lua"]'
+target = 'main.lua'
 pattern = '''-- Kill threads (makes restarting possible)'''
 position = "after"
 payload = '''if ModProfiles and ModProfiles.io_thread and ModProfiles.io_thread.channel then

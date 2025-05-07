@@ -29,16 +29,19 @@ ModProfiles.restart = false
 ModProfiles.profiles = {}
 ModProfiles.active_profile = nil
 
--- local io_thread = love.thread.newThread(SMODS.current_mod.path:match("Mods/%a*/").."io.lua")
--- local io_channel = love.thread.getChannel('io_channel')
--- io_thread:start(SMODS.current_mod.path:match("Mods/(%a*)/"))
--- local mod_name = SMODS.current_mod.path:match("Mods/(%a*)/")
--- ModProfiles.io_thread = {
---     thread = io_thread,
---     channel = io_channel,
---     active = false,
---     active_procs = {}
--- }
+local io_thread = love.thread.newThread(SMODS.current_mod.path:match("Mods/%a*/").."io.lua")
+local io_channel = love.thread.getChannel('io_channel')
+local io_out = love.thread.getChannel('io_out')
+io_thread:start(SMODS.current_mod.path:match("Mods/(%a*)/"))
+local mod_name = SMODS.current_mod.path:match("Mods/(%a*)/")
+ModProfiles.io_thread = {
+    thread = io_thread,
+    channel = io_channel,
+    out = io_out,
+    active = false,
+    proc_count = 0, -- again.
+    active_procs = {}
+}
 
 
 local function getProfiles() 
@@ -91,76 +94,79 @@ local function safeFunc(func, path, data)
 end
 
 function recursiveCopy(old_dir, new_dir, depth)
-    print('s-------')
-    print("call on " .. old_dir)
-    depth = depth or 9
-    for _, m in ipairs(NFS.getDirectoryItemsInfo(old_dir)) do
-        local current_dir = old_dir .. "/" .. m.name
-        local edit_dir = new_dir .. "/" .. m.name
-        print("c "..current_dir)
-        print("e "..edit_dir)
-        if m.type == "directory" and (m.name ~= mod_name and m.name ~= "lovely") then
-            safeFunc(NFS.createDirectory, edit_dir)
-            if depth >= 0 then
-                recursiveCopy(current_dir, edit_dir, depth-1)
-            end
-        elseif m.type == "file" then
-            local file,err= NFS.read(current_dir)
+    -- print('s-------')
+    -- print("call on " .. old_dir)
+    -- depth = depth or 9
+    -- for _, m in ipairs(NFS.getDirectoryItemsInfo(old_dir)) do
+    --     local current_dir = old_dir .. "/" .. m.name
+    --     local edit_dir = new_dir .. "/" .. m.name
+    --     print("c "..current_dir)
+    --     print("e "..edit_dir)
+    --     if m.type == "directory" and (m.name ~= mod_name and m.name ~= "lovely") then
+    --         safeFunc(NFS.createDirectory, edit_dir)
+    --         if depth >= 0 then
+    --             recursiveCopy(current_dir, edit_dir, depth-1)
+    --         end
+    --     elseif m.type == "file" then
+    --         local file,err= NFS.read(current_dir)
 
-            if file ~= nil then 
-                safeFunc(NFS.write, edit_dir, file)
-            else 
-                error(err)
-            end
-        end
-    end
-    print('fin')
-    print('e-------')
+    --         if file ~= nil then 
+    --             safeFunc(NFS.write, edit_dir, file)
+    --         else 
+    --             error(err)
+    --         end
+    --     end
+    -- end
+    -- print('fin')
+    -- print('e-------')
     
-    if depth==9 then print('finfinfinfinfinfinfin') end
-    -- local id = io_channel:push({
-    --     type="copy",
-    --     profile=old_dir,
-    --     copy_params={
-    --         target=new_dir,
-    --     }
-    -- })
-    -- ModProfiles.io_thread.active_procs[#ModProfiles.io_thread.active_procs+1] = id
+    -- if depth==9 then print('finfinfinfinfinfinfin') end
+    local id = io_channel:push({
+        type="copy",
+        profile=old_dir,
+        copy_params={
+            target=new_dir,
+        }
+    })
+    ModProfiles.io_thread.proc_count = ModProfiles.io_thread.proc_count + 1
+    --ModProfiles.io_thread.active_procs[#ModProfiles.io_thread.active_procs+1] = id
 end
 function recursiveDelete(profile_dir, delete_parent, depth)
-    depth = depth or 9
-    failed = 0
-    succeeded = 0
+    -- depth = depth or 9
+    -- failed = 0
+    -- succeeded = 0
     
-    for k, v in ipairs(NFS.getDirectoryItemsInfo(profile_dir)) do
-        if v.type ~= "symlink" and (v.name ~= "lovely" and depth == 9) then
-            if v.type == "directory" and v.name ~= mod_name then
-                if depth > 0 then  
-                    recursiveDelete(profile_dir.."/"..v.name, delete_parent, depth-1) 
-                    
-                    local success = safeFunc(NFS.remove,profile_dir.."/"..v.name)
-                    if success then succeeded = succeeded + 1 else failed = failed + 1 end
-                end
-            else
-                local success = safeFunc(NFS.remove,profile_dir.."/"..v.name)
-                if success then succeeded = succeeded + 1 else failed = failed + 1 end
-            end
-        end
-    end
-    if delete_parent then
-        safeFunc(NFS.remove,profile_dir)
-    end
+    -- for k, v in ipairs(NFS.getDirectoryItemsInfo(profile_dir)) do
+    --     if v.type ~= "symlink" and (v.name ~= "lovely" and depth == 9) then
+    --         if v.type == "directory" and v.name ~= mod_name then
+    --             if depth > 0 then  
+    --                 recursiveDelete(profile_dir.."/"..v.name, delete_parent, depth-1) 
+    --                 print('dirdel')
+    --                 local success = safeFunc(NFS.remove,profile_dir.."/"..v.name)
+    --                 if success then succeeded = succeeded + 1 else failed = failed + 1 end
+    --             end
+    --         else
+    --             print('filedel')
+    --             local success = safeFunc(NFS.remove,profile_dir.."/"..v.name)
+    --             if success then succeeded = succeeded + 1 else failed = failed + 1 end
+    --         end
+    --     end
+    -- end
+    -- if delete_parent then
+    --     safeFunc(NFS.remove,profile_dir)
+    -- end
 
+    -- print({failed=failed,succeeded=succeeded})
 
-
-    -- local id = io_channel:push({
-    --     type="delete",
-    --     profile=profile_dir,
-    --     delete_params={
-    --         delete_parent=delete_parent
-    --     }
-    -- })
-    -- ModProfiles.io_thread.active_procs[#ModProfiles.io_thread.active_procs+1] = id
+    local id = io_channel:push({
+        type="delete",
+        profile=profile_dir,
+        delete_params={
+            delete_parent=delete_parent
+        }
+    })
+    ModProfiles.io_thread.proc_count = ModProfiles.io_thread.proc_count + 1
+    --ModProfiles.io_thread.active_procs[#ModProfiles.io_thread.active_procs+1] = id
 end
 
 local function init()
@@ -186,6 +192,7 @@ local function createNewProfile(name)
     local profile_path = ModProfiles.profiles_dir.."/"..id
     NFS.createDirectory(profile_path)
     recursiveCopy(ModProfiles.mods_dir, profile_path)
+    if not ModProfiles.active_profile then ModProfiles.active_profile = name end
 end
 
 local function loadProfile(profile)
@@ -199,7 +206,7 @@ local function loadProfile(profile)
 
     ModProfiles.active_profile = profile
     print("loadl " .. profile)
-    NFS.write(ModProfiles.profiles_dir.."/data", ModProfiles.active_profile)
+    NFS.write(ModProfiles.profiles_dir.."/data", tostring(ModProfiles.active_profile))
 
     recursiveDelete(ModProfiles.mods_dir)
 
@@ -218,7 +225,7 @@ local function deleteProfile(profile)
 
     if ModProfiles.active_profile == profile then 
         ModProfiles.active_profile = nil 
-        NFS.write(ModProfiles.profiles_dir.."/data", ModProfiles.active_profile)
+        NFS.write(ModProfiles.profiles_dir.."/data", tostring(ModProfiles.active_profile))
     end
 
     recursiveDelete(profile_path,true)
@@ -244,15 +251,25 @@ function Game:update(dt)
     -- end
 
 
-    -- ModProfiles.io_thread.active = #ModProfiles.io_thread.active_procs == 0
+    -- ModProfiles.io_thread.active = #ModProfiles.io_thread.active_procs ~= 0
 
     -- if not ModProfiles.io_thread.active and ModProfiles.restart then 
     --     --SMODS.restart_game() 
     --     print("RESTST") -- Todo: make work
     -- end
+    if ModProfiles.io_thread.thread:getError() then
+        error(ModProfiles.io_thread.thread:getError())
+    end
 
-
-
+    if type(ModProfiles.io_thread.out:peek()) == "string" then 
+        local str = ModProfiles.io_thread.out:pop();
+        ModProfiles.io_thread.proc_count = ModProfiles.io_thread.proc_count-1
+        ModProfiles.io_thread.active = ModProfiles.io_thread.proc_count ~= 0
+        print(str .. " " .. tostring(ModProfiles.io_thread.active)); 
+        if not ModProfiles.io_thread.active and ModProfiles.restart then
+            SMODS.restart_game() 
+        end
+    end
 
 
 
