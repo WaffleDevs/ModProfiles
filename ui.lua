@@ -468,7 +468,7 @@ G.FUNCS.load_modprofile_ui = function (e)
     local has_smods = profileInfo.has_smods
 
     local main_nodes = {
-        is_changed and {n = G.UIT.T, config = {
+        (is_changed or ModProfiles.active_profile==nil) and {n = G.UIT.T, config = {
             text = "You have unsaved changes.",
             shadow = true,
             scale = 0.45,
@@ -628,18 +628,29 @@ G.FUNCS.load_modprofile_ui = function (e)
                                     minw = 2.5,
                                     col = true
                                 }) or nil,
-                                is_changed and UIBox_button({
+                                ModProfiles.active_profile==nil and UIBox_button({
+                                    label = { "Create and Save" },
+                                    shadow = true,
+                                    scale = .45,
+                                    colour = G.C.GREEN,
+                                    ref_table = profileInfo,
+                                    button = "new_profile_ui",
+                                    minh = .6,
+                                    minw = 2.9,
+                                    col = true
+                                }) or nil,
+                                (is_changed or ModProfiles.active_profile==nil) and UIBox_button({
                                     label = { "Load without saving" },
                                     shadow = true,
                                     scale = .45,
-                                    colour = G.C.UI.RED,
+                                    colour = G.C.RED,
                                     ref_table = profileInfo,
                                     button = "load_modprofile",
                                     minh = .6,
                                     minw = 2.9,
                                     col = true
                                 }) or nil,
-                                not is_changed and UIBox_button({
+                                (not is_changed and ModProfiles.active_profile) and UIBox_button({
                                     label = { "Confirm" },
                                     shadow = true,
                                     scale = .45,
@@ -674,6 +685,7 @@ G.FUNCS.load_modprofile_save = function (e)
     ModProfiles.createNewProfile(ModProfiles.active_profile)
     G.FUNCS.load_modprofile(e)
 end
+
 G.FUNCS.load_modprofile = function (e)
     local profileInfo = e.config.ref_table
     ModProfiles.loadProfile(profileInfo.name)
@@ -785,7 +797,55 @@ G.OVERLAY_MENU:get_UIE_by_ID("set_profile_text").UIBox:recalculate()
 end
 G.FUNCS.new_profile = function(args)
     ModProfiles.createNewProfile(args.config.ref_table.name)
-    G.FUNCS.exit_confirmation(args)
+    G.FUNCS.overlay_menu({
+        definition = create_UIBox_generic_options({
+            back_func = "exit_confirmation",
+            no_back = true,
+            contents = {
+                {
+                    n = G.UIT.R,
+                    config = {
+                        padding = 0,
+                        align = "tm"
+                    },
+                    nodes = {
+                        {
+                            n = G.UIT.R,
+                            config = { align = "cm", padding = 0.3 },
+                            nodes = {
+                                {n=G.UIT.O, config={
+                                    object = DynaText({
+                                        string = {"Creating profile..."}, 
+                                        colours = {G.C.UI.TEXT_LIGHT}, 
+                                        shadow = true, 
+                                        float = true,
+                                        spacing = 1.5,
+                                        scale = 0.6,
+                                        silent = true})
+                                }}
+                            }
+                        },
+                        {
+                            n = G.UIT.R,
+                            config = { align = "cm", padding = 0.3 },
+                            nodes = {
+                                {n=G.UIT.O, config={
+                                    object = DynaText({
+                                        string = {"The game will restart automatically."}, 
+                                        colours = {G.C.JOKER_GREY}, 
+                                        shadow = true, 
+                                        bump = true,
+                                        spacing = 1,
+                                        scale = 0.45,
+                                        silent = true})
+                                }}
+                            }
+                        },
+                    }
+                }
+            }
+        })
+    })
 end
 G.FUNCS.openProfileFolder = function(e)
     local profileInfo = e.config.ref_table

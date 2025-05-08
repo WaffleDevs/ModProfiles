@@ -197,6 +197,7 @@ function Game:update(dt)
         print(str .. " " .. tostring(ModProfiles.io_thread.active)); 
         if not ModProfiles.io_thread.active then
             G.FUNCS.exit_confirmation()
+            play_sound('holo1', 1.5, 1)
             if ModProfiles.restart then SMODS.restart_game() end
         end
     end
