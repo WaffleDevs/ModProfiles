@@ -121,11 +121,16 @@ local function init()
     if data_info then
         local data = NFS.read(ModProfiles.profiles_dir.."/data")
         ModProfiles.active_profile = data
+        if ModProfiles.active_profile == "nil" then ModProfiles.active_profile = nil end
     else
         NFS.write(ModProfiles.profiles_dir.."/data","nil")
     end
 
     sendInfoMessage("Active Profile: " .. (ModProfiles.active_profile or "None"), "ModProfiles-Init")
+end
+
+local function saveActiveProfileToFile()
+    NFS.write(ModProfiles.profiles_dir.."/data", tostring(ModProfiles.active_profile))
 end
 
 local function createNewProfile(name) 
@@ -134,6 +139,7 @@ local function createNewProfile(name)
     NFS.createDirectory(profile_path)
     recursiveCopy(ModProfiles.mods_dir, profile_path)
     if not ModProfiles.active_profile then ModProfiles.active_profile = name end
+    saveActiveProfileToFile()
 end
 
 local function loadProfile(profile)
@@ -147,7 +153,7 @@ local function loadProfile(profile)
 
     ModProfiles.active_profile = profile
     print("loadl " .. profile)
-    NFS.write(ModProfiles.profiles_dir.."/data", tostring(ModProfiles.active_profile))
+    saveActiveProfileToFile()
 
     recursiveDelete(ModProfiles.mods_dir)
 
@@ -166,7 +172,7 @@ local function deleteProfile(profile)
 
     if ModProfiles.active_profile == profile then 
         ModProfiles.active_profile = nil 
-        NFS.write(ModProfiles.profiles_dir.."/data", tostring(ModProfiles.active_profile))
+        saveActiveProfileToFile()
     end
 
     recursiveDelete(profile_path,true)
@@ -189,8 +195,9 @@ function Game:update(dt)
         ModProfiles.io_thread.proc_count = ModProfiles.io_thread.proc_count-1
         ModProfiles.io_thread.active = ModProfiles.io_thread.proc_count ~= 0
         print(str .. " " .. tostring(ModProfiles.io_thread.active)); 
-        if not ModProfiles.io_thread.active and ModProfiles.restart then
-            SMODS.restart_game() 
+        if not ModProfiles.io_thread.active then
+            G.FUNCS.exit_confirmation()
+            if ModProfiles.restart then SMODS.restart_game() end
         end
     end
 

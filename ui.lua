@@ -298,7 +298,7 @@ local function createProfileConfirmationDialog(args)
                                 label = { args.confirm_text },
                                 shadow = true,
                                 scale = .45,
-                                colour = args.fcc and G.C.GREEN or G.C.RED,
+                                colour = args.fccc and G.C.UI.TEXT_INACTIVE or G.C.RED,
                                 ref_table = args.profile,
                                 button = args.confirm_func,
                                 minh = .6,
@@ -309,7 +309,7 @@ local function createProfileConfirmationDialog(args)
                                 label = { args.deny_text },
                                 shadow = true,
                                 scale = .45,
-                                colour = args.fcc and G.C.RED or G.C.GREEN,
+                                colour = args.fccc and G.C.RED or G.C.UI.TEXT_INACTIVE,
                                 button = "exit_confirmation",
                                 minh = .6,
                                 minw = 2.5,
@@ -359,10 +359,58 @@ end
 
 G.FUNCS.save_profile = function (e)
     local profileInfo = e.config.ref_table
-   ModProfiles.deleteProfile(profileInfo.name)
-   ModProfiles.createNewProfile(profileInfo.name)
-   play_sound('highlight2', .5, 0.4)
-   G.FUNCS.exit_confirmation(e)
+    ModProfiles.deleteProfile(profileInfo.name)
+    ModProfiles.createNewProfile(profileInfo.name)
+    play_sound('highlight2', .5, 0.4)
+    G.FUNCS.overlay_menu({
+        definition = create_UIBox_generic_options({
+            back_func = "exit_confirmation",
+            no_back = true,
+            contents = {
+                {
+                    n = G.UIT.R,
+                    config = {
+                        padding = 0,
+                        align = "tm"
+                    },
+                    nodes = {
+                        {
+                            n = G.UIT.R,
+                            config = { align = "cm", padding = 0.3 },
+                            nodes = {
+                                {n=G.UIT.O, config={
+                                    object = DynaText({
+                                        string = {"Saving profile..."}, 
+                                        colours = {G.C.UI.TEXT_LIGHT}, 
+                                        shadow = true, 
+                                        float = true,
+                                        spacing = 1.5,
+                                        scale = 0.6,
+                                        silent = true})
+                                }}
+                            }
+                        },
+                        {
+                            n = G.UIT.R,
+                            config = { align = "cm", padding = 0.3 },
+                            nodes = {
+                                {n=G.UIT.O, config={
+                                    object = DynaText({
+                                        string = {"This menu will close automatically.", "You may also click 'Esc', but this can cause issues."}, 
+                                        colours = {G.C.JOKER_GREY}, 
+                                        shadow = true, 
+                                        bump = true,
+                                        spacing = 1,
+                                        scale = 0.45,
+                                        silent = true})
+                                }}
+                            }
+                        },
+                    }
+                }
+            }
+        })
+    })
 end
 
 G.FUNCS.delete_profile_ui = function (e)
@@ -379,14 +427,13 @@ end
 
 G.FUNCS.delete_profile = function (e)
     local profileInfo = e.config.ref_table
-   ModProfiles.deleteProfile(profileInfo.name)
-   play_sound('crumple1', 0.8, 1);
-   G.FUNCS.exit_confirmation(e)
+    ModProfiles.deleteProfile(profileInfo.name)
+    play_sound('crumple1', 0.8, 1);
 end
 
 function checkEdits(profile)
-    if ModProfiles.active_profile == nil then
-        return true
+    if not ModProfiles.active_profile then
+        return false
     end
 
     local result = false
@@ -416,11 +463,8 @@ end
 
 G.FUNCS.load_modprofile_ui = function (e)
     local profileInfo = e.config.ref_table
-    local text = "Are you sure you want to load?"
     local is_changed, files = checkEdits(profileInfo.name)
-    if is_changed then
-        text = "You have unsaved changes. " .. text
-    end
+    print(is_changed)
     local has_smods = profileInfo.has_smods
 
     local main_nodes = {
@@ -533,45 +577,7 @@ G.FUNCS.load_modprofile_ui = function (e)
                     }
                 }
             end
-            -- edited_mods_node.nodes[#edited_mods_node.nodes+1] = {
-            --     n = G.UIT.R,
-            --     config = {padding = 0.1 },
-            --     nodes = {
-            --         {n = G.UIT.T, config = {
-            --             text = i .. ": " .. file1,
-            --             shadow = true,
-            --             scale = 0.45,
-            --             colour = G.C.UI.TEXT_LIGHT,
-            --             align = "cl",
-            --             padding = .1
-            --         }},
-            --         { n = G.UIT.C, config = { padding = 0.4, align = "cm" }, nodes = {  } },
-            --         { n = G.UIT.C, config = { padding = 0.4, align = "cm" }, nodes = {  } },
-            --         { n = G.UIT.C, config = { padding = 0.4, align = "cm" }, nodes = {  } },
-            --         file2 and {n = G.UIT.T, config = {
-            --             text = i+1 .. ": " .. file2,
-            --             shadow = true,
-            --             scale = 0.45,
-            --             colour = G.C.UI.TEXT_LIGHT,
-            --             align = "cr",
-            --         }} or nil
-            --     }
-            -- }
         end
-
-        -- edited_mods_node = {
-        --     n = G.UIT.R,
-        --     config = { align = "cm", padding = 0.1 },
-        --     nodes = {
-        --         {n = G.UIT.T, config = {
-        --             text = "Modified Mods: ",
-        --             shadow = true,
-        --             scale = 0.45,
-        --             colour = G.C.UI.TEXT_LIGHT,
-        --         }},
-        --         mods_nodes
-        --     }
-        -- }
     end
 
 
@@ -596,18 +602,78 @@ G.FUNCS.load_modprofile_ui = function (e)
             }
         }}
     }
-
     
     G.FUNCS.overlay_menu({
-        definition = createProfileConfirmationDialog({
-            profile = profileInfo,
-            custom_node = node,
-            confirm_func = "load_modprofile",
-            fccc = is_changed
+        definition = create_UIBox_generic_options({
+            back_func = "exit_confirmation",
+            no_back = true,
+            contents = {
+                {
+                    n = G.UIT.R,
+                    config = { padding = 0, align = "tm"},
+                    nodes = {
+                        node,
+                        {
+                            n = G.UIT.R,
+                            config = { align = "cm", padding = 0.3 },
+                            nodes = {
+                                is_changed and UIBox_button({
+                                    label = { "Load and Save" },
+                                    shadow = true,
+                                    scale = .45,
+                                    colour = G.C.GREEN,
+                                    ref_table = profileInfo,
+                                    button = "load_modprofile_save",
+                                    minh = .6,
+                                    minw = 2.5,
+                                    col = true
+                                }) or nil,
+                                is_changed and UIBox_button({
+                                    label = { "Load without saving" },
+                                    shadow = true,
+                                    scale = .45,
+                                    colour = G.C.UI.RED,
+                                    ref_table = profileInfo,
+                                    button = "load_modprofile",
+                                    minh = .6,
+                                    minw = 2.9,
+                                    col = true
+                                }) or nil,
+                                not is_changed and UIBox_button({
+                                    label = { "Confirm" },
+                                    shadow = true,
+                                    scale = .45,
+                                    colour = ModProfiles.active_profile and G.C.GREEN or G.C.RED,
+                                    ref_table = profileInfo,
+                                    button = "load_modprofile",
+                                    minh = .6,
+                                    minw = 2.9,
+                                    col = true
+                                }) or nil,
+                                UIBox_button({
+                                    label = { "Cancel" },
+                                    shadow = true,
+                                    scale = .45,
+                                    colour = G.C.UI.TEXT_INACTIVE,
+                                    button = "exit_confirmation",
+                                    minh = .6,
+                                    minw = 2.5,
+                                    col = true
+                                }),
+                            }
+                        },
+                    }
+                }
+            }
         })
     })
 end
-
+G.FUNCS.load_modprofile_save = function (e)
+    local profileInfo = e.config.ref_table
+    ModProfiles.deleteProfile(ModProfiles.active_profile)
+    ModProfiles.createNewProfile(ModProfiles.active_profile)
+    G.FUNCS.load_modprofile(e)
+end
 G.FUNCS.load_modprofile = function (e)
     local profileInfo = e.config.ref_table
     ModProfiles.loadProfile(profileInfo.name)
