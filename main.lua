@@ -133,6 +133,7 @@ local function saveActiveProfileToFile()
     NFS.write(ModProfiles.profiles_dir.."/data", tostring(ModProfiles.active_profile))
 end
 
+
 local function createNewProfile(name) 
     local id = name
     local profile_path = ModProfiles.profiles_dir.."/"..id
@@ -190,17 +191,73 @@ function Game:update(dt)
         error(ModProfiles.io_thread.thread:getError())
     end
 
-    if type(ModProfiles.io_thread.out:peek()) == "string" then 
-        local str = ModProfiles.io_thread.out:pop();
+    if type(ModProfiles.io_thread.out:peek())  ~= "nil" then 
+        -- Code to run at 'End of task'. Out will always recieve a message at end of task, unless fatal error.
+        local ret = ModProfiles.io_thread.out:pop();
         ModProfiles.io_thread.proc_count = ModProfiles.io_thread.proc_count-1
         ModProfiles.io_thread.active = ModProfiles.io_thread.proc_count ~= 0
-        print(str .. " " .. tostring(ModProfiles.io_thread.active)); 
-        if not ModProfiles.io_thread.active then
-            G.FUNCS.exit_confirmation()
-            play_sound('holo1', 1.5, 1)
-            if ModProfiles.restart then SMODS.restart_game() end
+        if type(ret) == "string" then
+            print(ret .. " " .. tostring(ModProfiles.io_thread.active)); 
         end
-    end
+            print("type " .. type(ret)); 
+            -- All tasks done, run ending codes
+        if type(ret) == "string" then
+            if not ModProfiles.io_thread.active then
+                G.FUNCS.exit_confirmation()
+                play_sound('holo1', 1.5, 1)
+                if ModProfiles.restart then SMODS.restart_game() end
+            end
+        elseif type(ret) == "table" then
+            sendWarnMessage("Loading fucked up chat", "ModProfiles-IO_Thread")
+            love.system.setClipboardText(tprint(ret))
+            G.FUNCS.overlay_menu({
+                definition = create_UIBox_generic_options({
+                    back_func = "exit_confirmation",
+                    no_back = true,
+                    contents = {
+                        {
+                            n = G.UIT.C,
+                            config = { padding = 0, align = "tm"},
+                            nodes = {
+                                {
+                                    n = G.UIT.R,
+                                    config = { align = "cm", padding = 0.3 },
+                                    nodes = {
+                                        {n=G.UIT.O, config={
+                                            object = DynaText({
+                                                string = {"An error occured in loading. The relevent data has been copied to your clipboard."}, 
+                                                colours = {G.C.RED}, 
+                                                shadow = true, 
+                                                bump = true,
+                                                spacing = 1,
+                                                scale = 0.45,
+                                                silent = true})
+                                        }}
+                                    }
+                                },
+                                {
+                                    n = G.UIT.R,
+                                    config = { align = "cm", padding = 0.3 },
+                                    nodes = {
+                                        {n=G.UIT.O, config={
+                                            object = DynaText({
+                                                string = {"Please post the data in the Thread or at https://github.com/WaffleDevs/ModProfiles"}, 
+                                                colours = {G.C.RED}, 
+                                                shadow = true, 
+                                                bump = true,
+                                                spacing = 1,
+                                                scale = 0.45,
+                                                silent = true})
+                                        }}
+                                    }
+                                },
+                            }
+                        }
+                    }
+                })
+            })
+        end
+    end 
 
     old_game_update(self,dt)
 end

@@ -38,7 +38,7 @@ local function createClickableProfileBox(profileInfo, scale)
         scale = scale*0.85,
         colour = is_active and darken(G.C.RED, .4) or G.C.RED,
         ref_table = profileInfo,
-        button = "delete_profile_ui",
+        button = "delete_modprofile_ui",
         minh = scale*1.5,
         minw = 1.3, col = true
     })
@@ -48,7 +48,7 @@ local function createClickableProfileBox(profileInfo, scale)
         scale = scale*0.85,
         colour = is_active and darken(G.C.FILTER, .3) or G.C.FILTER,
         ref_table = profileInfo,
-        button = "save_profile_ui",
+        button = "save_modprofile_ui",
         minh = scale*1.5,
         minw = 1.3, col = true
     })
@@ -140,7 +140,7 @@ function staticModListContent()
                                         shadow = true,
                                         scale = scale*0.85,
                                         colour = G.C.SECONDARY_SET.Planet,
-                                        button = "new_profile_ui",
+                                        button = "new_modprofile_ui",
                                         minh = scale,
                                         minw = 1.5,
                                         col=true
@@ -346,18 +346,18 @@ G.FUNCS.exit_confirmation = function ( args )
     }))
 end
     
-G.FUNCS.save_profile_ui = function (e)
+G.FUNCS.save_modprofile_ui = function (e)
     local profileInfo = e.config.ref_table
     G.FUNCS.overlay_menu({
         definition = createProfileConfirmationDialog({
             profile = profileInfo,
             question_text = "Are you sure you want to overwrite this save?",
-            confirm_func = "save_profile"
+            confirm_func = "save_modprofile"
         })
     })
 end
 
-G.FUNCS.save_profile = function (e)
+G.FUNCS.save_modprofile = function (e)
     local profileInfo = e.config.ref_table
     ModProfiles.deleteProfile(profileInfo.name)
     ModProfiles.createNewProfile(profileInfo.name)
@@ -413,19 +413,19 @@ G.FUNCS.save_profile = function (e)
     })
 end
 
-G.FUNCS.delete_profile_ui = function (e)
+G.FUNCS.delete_modprofile_ui = function (e)
     local profileInfo = e.config.ref_table
     G.FUNCS.overlay_menu({
         definition = createProfileConfirmationDialog({
             profile = profileInfo,
             question_text = "Are you sure you want to delete this save?",
-            confirm_func = "delete_profile",
+            confirm_func = "delete_modprofile",
             fccc = true
         })
     })
 end
 
-G.FUNCS.delete_profile = function (e)
+G.FUNCS.delete_modprofile = function (e)
     local profileInfo = e.config.ref_table
     ModProfiles.deleteProfile(profileInfo.name)
     play_sound('crumple1', 0.8, 1);
@@ -634,7 +634,7 @@ G.FUNCS.load_modprofile_ui = function (e)
                                     scale = .45,
                                     colour = G.C.GREEN,
                                     ref_table = profileInfo,
-                                    button = "new_profile_ui",
+                                    button = "new_modprofile_ui",
                                     minh = .6,
                                     minw = 2.9,
                                     col = true
@@ -742,7 +742,7 @@ G.FUNCS.load_modprofile = function (e)
     })
 end
 
-G.FUNCS.new_profile_ui = function ()
+G.FUNCS.new_modprofile_ui = function ()
     local value = {name=""}
     G.FUNCS.overlay_menu({definition = 
     create_UIBox_generic_options({
@@ -775,7 +775,7 @@ G.FUNCS.new_profile_ui = function ()
                             shadow = true, scale = .45,
                             colour = G.C.GREEN,
                             ref_table = value,
-                            button = "new_profile",
+                            button = "new_modprofile",
                             minh = .6, minw = 2.5, col = true
                         }),
                         UIBox_button({
@@ -795,7 +795,7 @@ G.FUNCS.new_profile_ui = function ()
 })
 G.OVERLAY_MENU:get_UIE_by_ID("set_profile_text").UIBox:recalculate()
 end
-G.FUNCS.new_profile = function(args)
+G.FUNCS.new_modprofile = function(args)
     ModProfiles.createNewProfile(args.config.ref_table.name)
     G.FUNCS.overlay_menu({
         definition = create_UIBox_generic_options({

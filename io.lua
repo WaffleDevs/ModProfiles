@@ -1,5 +1,6 @@
 mod_name = ...
 local NFS = require("Mods/"..mod_name.."/nativefs")
+require("love.system")
 
 CHANNEL = love.thread.getChannel("io_channel")
 OUT = love.thread.getChannel("io_out")
@@ -16,7 +17,7 @@ local function safeFunc(func, path, data)
 end
 
 
-function recursiveCopy(old_dir, new_dir, depth)
+function recursiveCopy(old_dir, new_dir, depth, ret)
     depth = depth or 9
     for _, m in ipairs(NFS.getDirectoryItemsInfo(old_dir)) do
         local current_dir = old_dir .. "/" .. m.name
@@ -25,7 +26,9 @@ function recursiveCopy(old_dir, new_dir, depth)
             if NFS.getInfo(current_dir) then
                 safeFunc(NFS.createDirectory, edit_dir)
                 if depth >= 0 then
-                    recursiveCopy(current_dir, edit_dir, depth-1)
+                    recursiveCopy(current_dir, edit_dir, depth-1, ret)
+                else
+                    ret[current_dir] = "Recurse Depth Reached!"
                 end
             end
             
@@ -36,36 +39,39 @@ function recursiveCopy(old_dir, new_dir, depth)
                 if file ~= nil then 
                     safeFunc(NFS.write, edit_dir, file)
                 else 
+                    ret[current_dir] = err or "Copy Error!"
                 end
             end
             
         end
     end
 end
-function recursiveDelete(profile_dir, delete_parent, depth)
+function recursiveDelete(profile_dir, delete_parent, depth, ret)
     depth = depth or 9
 
-    failed = 0
-    succeeded = 0
-    
     for k, v in ipairs(NFS.getDirectoryItemsInfo(profile_dir)) do
         if v.type ~= "symlink" and ((depth==9 and v.name~="lovely") or depth<9) then
             if v.type == "directory" and v.name ~= mod_name and NFS.getInfo(profile_dir.."/"..v.name) then
                 if depth > 0 then  
-                    recursiveDelete(profile_dir.."/"..v.name, delete_parent, depth-1) 
+                    recursiveDelete(profile_dir.."/"..v.name, delete_parent, depth-1, ret) 
                     local success = safeFunc(NFS.remove,profile_dir.."/"..v.name)
-                    if success then succeeded = succeeded + 1 else failed = failed + 1 end
+                    if not success then 
+                        ret[profile_dir.."/"..v.name] = "Deletion Fail"
+                    end
+                else
+                    ret[profile_dir.."/"..v.name] = "Recurse Depth Reached!"
                 end
             else
                 local success = safeFunc(NFS.remove,profile_dir.."/"..v.name)
-                if success then succeeded = succeeded + 1 else failed = failed + 1 end
+                if not success then 
+                    ret[profile_dir.."/"..v.name] = "Deletion Fail"
+                end
             end
         end
     end
     if delete_parent then
         safeFunc(NFS.remove,profile_dir)
     end
-
 end
 
 local id = 0
@@ -85,16 +91,23 @@ while true do
     if request then
         id = id +1
         local path = request.profile
+        local ret = {}
         if request.type == "delete" then
-            recursiveDelete(request.profile,request.delete_params.delete_parent)
+            if love.system.getOS() == 'Windows' then os.execute("attrib -r ./*.* /s") end
+            recursiveDelete(request.profile,request.delete_params.delete_parent,nil, ret)
         end
         if request.type == "copy" then
             local target = request.copy_params.target
-            recursiveCopy(path, target)
+            if love.system.getOS() == 'Windows' then os.execute("attrib -r ./*.* /s") end
+            recursiveCopy(path, target, nil, ret)
         end
         if request.type == "kill" then
             return
         end
-        OUT:push('fin ' .. id)
+        if type(ret) == "table" and #ret > 0 then
+            OUT:push(ret)
+        else
+            OUT:push('Finished Task. Guessed Id: ' .. id)
+        end
     end
 end
