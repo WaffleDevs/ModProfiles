@@ -1,4 +1,4 @@
--- Heavily inspired from SMODS/src/ui.lua. 
+-- Heavily modified from SMODS/src/ui.lua. 
 
 local function recalculateProfilesList(page)
     page = page or 1
@@ -20,18 +20,38 @@ end
 local function createClickableProfileBox(profileInfo, scale)
     local is_active = profileInfo.name == ModProfiles.active_profile
 
+    local label = { profileInfo.name}
+    if profileInfo.profile_info then
+        print(profileInfo.name)
+        label[1] = string.format("%s; %s ",
+            label[1],
+            profileInfo.profile_info.name
+        )
+        label[2] = string.format("By: %s", table.concat(profileInfo.profile_info.author, ", "))
+    end
     local button = UIBox_button {
         id = is_active and "active_profile_box" or nil,
-        label = { profileInfo.name },
+        label = label,
         shadow = true,
         scale = scale,
         colour = is_active and G.C.BOOSTER or G.C.UI.TEXT_DARK,--G.C.UI.TEXT_DARK or G.C.BOOSTER,
         text_colour = G.C.UI.TEXT_LIGHT,
         ref_table = profileInfo,
-        button = "openProfileFolder",
+        button = "openProfileUi",--"openProfileFolder",
         minh = 0.8,
         minw = 5
     }
+    if profileInfo.profile_info and profileInfo.profile_info.version then
+        table.insert(button.nodes[1].nodes[1].nodes, {
+            n = G.UIT.T,
+            config = {
+                text = ('(%s) '):format(profileInfo.profile_info.version),
+                scale = scale*0.8,
+                colour = HEX("FFFFFF99"),
+                shadow = true,
+            },
+        })
+    end
     local delete = UIBox_button({
         label = { localize('b_profile_delete') },
         shadow = true,
@@ -327,6 +347,113 @@ G.FUNCS.update_profile_list = function ( args )
     if not args or not args.cycle_config then return end
     SMODS.GUI.DynamicUIManager.updateDynamicAreas({ 
         ["profilesList"] = ModProfiles.UI.dynamicModListContent(args.cycle_config.current_option)
+    })
+end
+-- From Smods/src/ui.lua... Why is it local!!! THIS WOULD BE SO COOL GLOBAL!
+local function wrapText(text, maxChars)
+    local wrappedText = ""
+    local currentLineLength = 0
+
+    for word in text:gmatch("%S+") do
+        if currentLineLength + #word <= maxChars then
+            wrappedText = wrappedText .. word .. ' '
+            currentLineLength = currentLineLength + #word + 1
+        else
+            wrappedText = wrappedText .. '\n' .. word .. ' '
+            currentLineLength = #word + 1
+        end
+    end
+
+    return wrappedText
+end
+
+G.FUNCS.openProfileUi = function(e)
+    local profileInfo = e.config.ref_table
+
+    local scale = .75*.65
+    local label = {}
+    if profileInfo.profile_info then
+        label[1] = profileInfo.profile_info.name
+    else
+        label[1] = profileInfo.name
+    end
+    local button = UIBox_button {
+        label = label,
+        shadow = true,
+        scale = scale,
+        colour = G.C.BOOSTER,
+        text_colour = G.C.UI.TEXT_LIGHT,
+        ref_table = profileInfo,
+        button = "openProfileFolder",
+        minh = 0.8,
+        minw = 5
+    }
+    local maxCharsPerLine = 45
+    local wrappedDescription = "A custom modpack made by you! (Or one that is missing a profile.lua file....)"
+
+    local authors_text = "By: You!"
+    if profileInfo.profile_info then
+        table.insert(button.nodes[1].nodes[1].nodes, {
+            n = G.UIT.T,
+            config = {
+                text = (' (%s) '):format(profileInfo.profile_info.version),
+                scale = scale*0.8,
+                colour = HEX("FFFFFF99"),
+                shadow = true,
+            },
+        })
+        authors_text = string.format("By: %s", table.concat(profileInfo.profile_info.author, ", "))
+
+        wrappedDescription = profileInfo.profile_info.description
+    end
+    wrappedDescription = wrapText(wrappedDescription, maxCharsPerLine)
+
+
+    G.FUNCS.overlay_menu({
+        definition = create_UIBox_generic_options({
+            back_func = "exit_confirmation",
+            contents = {
+                { n = G.UIT.R,
+                    config = { padding = 0, align = "tm"  },
+                    nodes = {
+                        { n = G.UIT.R,
+                            config = { align = "cm", padding = 0.4 },
+                            nodes = {
+                                button
+                            }
+                        },
+                        { n = G.UIT.R,config = { align = "tm", padding = 0.1, r = 1,colour = G.C.BLACK, minh = 3, }, nodes = { 
+                            { n = G.UIT.R,
+                                config = { padding = 0.3, align = "cm", },
+                                nodes = {
+                                    { n = G.UIT.T,
+                                        config = {
+                                            text = authors_text,
+                                            shadow = true,
+                                            scale = scale * .8,
+                                            colour = G.C.UI.TEXT_LIGHT
+                                        }
+                                    }
+                                }
+                            },
+                            { n = G.UIT.R,
+                                config = { padding = 0.3, align = "cm", },
+                                nodes = {
+                                    { n = G.UIT.T,
+                                        config = {
+                                            text = wrappedDescription,
+                                            shadow = true,
+                                            scale = scale * .75,
+                                            colour = G.C.UI.TEXT_LIGHT
+                                        }
+                                    }
+                                }
+                            }
+                        }},
+                    }
+                }
+            }
+        })
     })
 end
 
@@ -849,11 +976,11 @@ G.FUNCS.new_modprofile = function(args)
 end
 G.FUNCS.openProfileFolder = function(e)
     local profileInfo = e.config.ref_table
-    love.system.openURL(ModProfiles.profiles_dir.."/"..profileInfo.name)
+    love.system.openURL(love.filesystem.getSaveDirectory()..ModProfiles.profiles_dir.."/"..profileInfo.name)
 end
 
 G.FUNCS.openProfilesDirectory = function(e)
-    love.system.openURL(ModProfiles.profiles_dir)
+    love.system.openURL(love.filesystem.getSaveDirectory()..ModProfiles.profiles_dir)
 end
 
 

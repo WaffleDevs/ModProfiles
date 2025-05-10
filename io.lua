@@ -1,30 +1,34 @@
 mod_name = ...
-local NFS = require("Mods/"..mod_name.."/nativefs")
-require("love.system")
 
 CHANNEL = love.thread.getChannel("io_channel")
 OUT = love.thread.getChannel("io_out")
-profiles_dir = love.filesystem.getSaveDirectory() .. "/mod_profiles"
-mods_dir = love.filesystem.getSaveDirectory() .. "/Mods"
+profiles_dir = "/mod_profiles"
+mods_dir = "/Mods"
+require("love.system")
 
-
-local function safeFunc(func, path, data)
-    if string.find(path,profiles_dir) == 1 or string.find(path,mods_dir) == 1 then
-        return func(path,data)
-    else
-        error("Path outside of allowed folder: " ..path)
+-- From NativeFS Copyright 2020 megagrump@pm.me
+local function getDirectoryItemsInfo(path, filtertype)
+    local items = {}
+    local files = love.filesystem.getDirectoryItems(path)
+    for i = 1, #files do
+        local filepath = string.format('%s/%s', path, files[i])
+        local info = love.filesystem.getInfo(filepath, filtertype)
+        if info then
+            info.name = files[i]
+            table.insert(items, info)
+        end
     end
+    return items
 end
-
 
 function recursiveCopy(old_dir, new_dir, depth, ret)
     depth = depth or 9
-    for _, m in ipairs(NFS.getDirectoryItemsInfo(old_dir)) do
+    for _, m in ipairs(getDirectoryItemsInfo(old_dir)) do
         local current_dir = old_dir .. "/" .. m.name
         local edit_dir = new_dir .. "/" .. m.name
         if m.type == "directory" and (m.name ~= mod_name and ((depth==9 and m.name~="lovely") or depth<9)) then
-            if NFS.getInfo(current_dir) then
-                safeFunc(NFS.createDirectory, edit_dir)
+            if love.filesystem.getInfo(current_dir) then
+                love.filesystem.createDirectory(edit_dir)
                 if depth >= 0 then
                     recursiveCopy(current_dir, edit_dir, depth-1, ret)
                 else
@@ -33,11 +37,11 @@ function recursiveCopy(old_dir, new_dir, depth, ret)
             end
             
         elseif m.type == "file" then
-            if NFS.getInfo(current_dir) then
-                local file,err= NFS.read(current_dir)
+            if love.filesystem.getInfo(current_dir) then
+                local file,err= love.filesystem.read(current_dir)
 
                 if file ~= nil then 
-                    safeFunc(NFS.write, edit_dir, file)
+                    love.filesystem.write(edit_dir, file)
                 else 
                     ret[current_dir] = err or "Copy Error!"
                 end
@@ -49,12 +53,12 @@ end
 function recursiveDelete(profile_dir, delete_parent, depth, ret)
     depth = depth or 9
 
-    for k, v in ipairs(NFS.getDirectoryItemsInfo(profile_dir)) do
+    for k, v in ipairs(getDirectoryItemsInfo(profile_dir)) do
         if v.type ~= "symlink" and ((depth==9 and v.name~="lovely") or depth<9) then
-            if v.type == "directory" and v.name ~= mod_name and NFS.getInfo(profile_dir.."/"..v.name) then
+            if v.type == "directory" and v.name ~= mod_name and love.filesystem.getInfo(profile_dir.."/"..v.name) then
                 if depth > 0 then  
                     recursiveDelete(profile_dir.."/"..v.name, delete_parent, depth-1, ret) 
-                    local success = safeFunc(NFS.remove,profile_dir.."/"..v.name)
+                    local success = love.filesystem.remove(profile_dir.."/"..v.name)
                     if not success then 
                         ret[profile_dir.."/"..v.name] = "Deletion Fail"
                     end
@@ -62,7 +66,7 @@ function recursiveDelete(profile_dir, delete_parent, depth, ret)
                     ret[profile_dir.."/"..v.name] = "Recurse Depth Reached!"
                 end
             else
-                local success = safeFunc(NFS.remove,profile_dir.."/"..v.name)
+                local success = love.filesystem.remove(profile_dir.."/"..v.name)
                 if not success then 
                     ret[profile_dir.."/"..v.name] = "Deletion Fail"
                 end
@@ -70,7 +74,7 @@ function recursiveDelete(profile_dir, delete_parent, depth, ret)
         end
     end
     if delete_parent then
-        safeFunc(NFS.remove,profile_dir)
+        love.filesystem.remove(profile_dir)
     end
 end
 

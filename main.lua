@@ -22,8 +22,8 @@
 
 ModProfiles = {}
 
-ModProfiles.profiles_dir = love.filesystem.getSaveDirectory() .. "/mod_profiles"
-ModProfiles.mods_dir = love.filesystem.getSaveDirectory() .. "/Mods"
+ModProfiles.profiles_dir = "/mod_profiles"
+ModProfiles.mods_dir = "/Mods"
 
 ModProfiles.restart = false
 ModProfiles.profiles = {}
@@ -40,13 +40,26 @@ ModProfiles.io_thread = {
     active = false,
     proc_count = 0, -- again.
 }
-
+-- From NativeFS Copyright 2020 megagrump@pm.me
+local function getDirectoryItemsInfo(path, filtertype)
+    local items = {}
+    local files = love.filesystem.getDirectoryItems(path)
+    for i = 1, #files do
+        local filepath = string.format('%s/%s', path, files[i])
+        local info = love.filesystem.getInfo(filepath, filtertype)
+        if info then
+            info.name = files[i]
+            table.insert(items, info)
+        end
+    end
+    return items
+end
 
 local function getProfiles() 
     ModProfiles.profiles = {}
     local profile_count = 0
     -- profiles
-    for _, v in ipairs(NFS.getDirectoryItemsInfo(ModProfiles.profiles_dir)) do
+    for _, v in ipairs(getDirectoryItemsInfo(ModProfiles.profiles_dir)) do
         if v.type == "file" and not v.name == "data" then
             print('Odd file in Profiles Dir. ' .. v.name)
         end
@@ -62,19 +75,28 @@ local function getProfiles()
 
             --mods
 
-            for _, m in ipairs(NFS.getDirectoryItemsInfo(ModProfiles.profiles_dir.."/"..v.name)) do
-                if v.type == "directory" then
-                    local disabled = NFS.getInfo(ModProfiles.profiles_dir.."/"..v.name.."/"..m.name.."/.lovelyignore")
+            for _, m in ipairs(getDirectoryItemsInfo(ModProfiles.profiles_dir.."/"..v.name)) do
+                if m.type == "directory" then
+                    local disabled = love.filesystem.getInfo(ModProfiles.profiles_dir.."/"..v.name.."/"..m.name.."/.lovelyignore")
                     if not disabled then
                         ModProfiles.profiles[#ModProfiles.profiles].mods[#ModProfiles.profiles[#ModProfiles.profiles].mods+1] = {
                             mod_name = m.name,
                             modtime = m.modtime
                         }
 
-                        local ok, chunk, err = pcall(NFS.load, ModProfiles.profiles_dir.."/"..v.name.."/"..m.name.."/version.lua")
+                        local ok, chunk, err = pcall(love.filesystem.load, ModProfiles.profiles_dir.."/"..v.name.."/"..m.name.."/version.lua")
                         if ok and chunk then
                             local version = chunk()
                             ModProfiles.profiles[#ModProfiles.profiles].has_smods = version:match("%d%.%d%.%d~BETA%-%d%d%d%d%a%-STEAMODDED") and 1 or version:match("%d%.%d%.%d~ALPHA%-%d%d%d%d%a%-STEAMODDED") and 2 or 0
+                        end
+                    end
+                elseif m.type=="file" then
+                    if m.name == "profile.lua" then
+                        local ok, chunk, err = pcall(love.filesystem.load, ModProfiles.profiles_dir.."/"..v.name.."/profile.lua")
+                        if ok and chunk then
+                            local profile_info = chunk()
+                            ModProfiles.profiles[#ModProfiles.profiles].profile_info = profile_info
+                            print("profile info " .. v.name)
                         end
                     end
                 end
@@ -106,35 +128,35 @@ function recursiveDelete(profile_dir, delete_parent, depth)
 end
 
 local function init()
-    local profiles_directory_info = NFS.getInfo(ModProfiles.profiles_dir, "directory")
+    local profiles_directory_info = love.filesystem.getInfo(ModProfiles.profiles_dir, "directory")
     
     if profiles_directory_info then
         getProfiles()
     else
-        NFS.createDirectory(ModProfiles.profiles_dir)
+        love.filesystem.createDirectory(ModProfiles.profiles_dir)
     end
 
-    local data_info = NFS.getInfo(ModProfiles.profiles_dir.."/data", "file")
+    local data_info = love.filesystem.getInfo(ModProfiles.profiles_dir.."/data", "file")
     if data_info then
-        local data = NFS.read(ModProfiles.profiles_dir.."/data")
+        local data = love.filesystem.read(ModProfiles.profiles_dir.."/data")
         ModProfiles.active_profile = data
         if ModProfiles.active_profile == "nil" then ModProfiles.active_profile = nil end
     else
-        NFS.write(ModProfiles.profiles_dir.."/data","nil")
+        love.filesystem.write(ModProfiles.profiles_dir.."/data","nil")
     end
 
     sendInfoMessage("Active Profile: " .. (ModProfiles.active_profile or "None"), "ModProfiles-Init")
 end
 
 local function saveActiveProfileToFile()
-    NFS.write(ModProfiles.profiles_dir.."/data", tostring(ModProfiles.active_profile))
+    love.filesystem.write(ModProfiles.profiles_dir.."/data", tostring(ModProfiles.active_profile))
 end
 
 
 local function createNewProfile(name) 
     local id = name
     local profile_path = ModProfiles.profiles_dir.."/"..id
-    NFS.createDirectory(profile_path)
+    love.filesystem.createDirectory(profile_path)
     recursiveCopy(ModProfiles.mods_dir, profile_path)
     if not ModProfiles.active_profile then ModProfiles.active_profile = name end
     saveActiveProfileToFile()
@@ -142,7 +164,7 @@ end
 
 local function loadProfile(profile)
     local profile_path = ModProfiles.profiles_dir.."/"..profile
-    local profile_folder = NFS.getInfo(profile_path, "directory")
+    local profile_folder = love.filesystem.getInfo(profile_path, "directory")
 
     if not profile_folder then 
         error("Modprofile doesnt exist: "..profile)
@@ -161,7 +183,7 @@ local function loadProfile(profile)
 end
 local function deleteProfile(profile)
     local profile_path = ModProfiles.profiles_dir.."/"..profile
-    local profile_folder = NFS.getInfo(profile_path, "directory")
+    local profile_folder = love.filesystem.getInfo(profile_path, "directory")
 
     if not profile_folder then 
         error("Modprofile doesnt exist: "..profile)
@@ -259,6 +281,6 @@ function Game:update(dt)
     old_game_update(self,dt)
 end
 
-NFS.load(SMODS.current_mod.path.."/ui.lua")()
+love.filesystem.load("Mods/"..ModProfiles.mod_folder.."/ui.lua")()
 
 init()
