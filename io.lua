@@ -93,12 +93,12 @@ while true do
         local path = request.profile
         local ret = {}
         if request.type == "delete" then
-            if love.system.getOS() == 'Windows' then os.execute("attrib -r ./*.* /s") end
+            if love.system.getOS() == 'Windows' then os.execute("attrib -r ./Mods/*.* /s") end
             recursiveDelete(request.profile,request.delete_params.delete_parent,nil, ret)
         end
         if request.type == "copy" then
             local target = request.copy_params.target
-            if love.system.getOS() == 'Windows' then os.execute("attrib -r ./*.* /s") end
+            if love.system.getOS() == 'Windows' then os.execute("attrib -r ./Mods/*.* /s") end
             recursiveCopy(path, target, nil, ret)
         end
         if request.type == "kill" then

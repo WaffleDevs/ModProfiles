@@ -41,10 +41,7 @@ ModProfiles.io_thread = {
     proc_count = 0, -- again.
 }
 
-SMODS.Gradient {
-    key = "active_profile",
-    colours = {darken(G.C.RARITY[4],.4), G.C.UI.TEXT_INACTIVE}
-}
+
 local function getProfiles() 
     ModProfiles.profiles = {}
     local profile_count = 0
