@@ -20,7 +20,7 @@
 
 --]]
 
-ModProfiles = {}
+ModProfiles = ModProfiles or {}
 
 ModProfiles.profiles_dir = "/mod_profiles"
 ModProfiles.mods_dir = "/Mods"
