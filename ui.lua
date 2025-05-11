@@ -1056,7 +1056,7 @@ G.FUNCS.new_modprofile = function(args)
                             nodes = {
                                 {n=G.UIT.O, config={
                                     object = DynaText({
-                                        string = {"The game will restart automatically."}, 
+                                        string = {"This menu will close automatically.", "You may also click 'Esc', but this can cause issues."}, 
                                         colours = {G.C.JOKER_GREY}, 
                                         shadow = true, 
                                         bump = true,
