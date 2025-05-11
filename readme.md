@@ -35,11 +35,12 @@ It should look like `ModPack.zip/profile.lua`. All mods should be in the same fo
 Below is an example of the `profile.lua` file.
 ```lua
 return {
-    name = "Modpack Name",
-    mod_colour = "22ccaa",
-    description = "A nice little modpack aimed towards more diverse play styles",
-    author = {"Myself"},
-    url = "https://github.com/WaffleDevs/Modpack",
-    version = "1.0.4",
+    name = "Coonie's Neo",
+    main_colour = "00cca3",
+    secondary_colour = nil, -- Sets the colour of profile buttons.
+    description = "A curated collection of Balatro mods made by many wonderful members of the community. Specially curated towards a vannilia+ game experience where things can get nuts,",
+    author = {"GayCoonie"},
+    url = "https://github.com/GayCoonie/Coonies-Mod-Pack-Neo",
+    version = "v12",
 }
 ```

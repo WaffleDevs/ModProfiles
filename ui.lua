@@ -19,17 +19,19 @@ end
 
 local function createClickableProfileBox(profileInfo, scale)
     local is_active = profileInfo.name == ModProfiles.active_profile
-
-    local label = { profileInfo.name , ""}
+    local label = { profileInfo.name}
+    local colour = G.C.BOOSTER
     if profileInfo.profile_info then 
         label[1] = label[1] .. " - "
+        label[2] = ''
+        colour = profileInfo.profile_info.secondary_colour and HEX(profileInfo.profile_info.secondary_colour) or colour
     end
     local button = UIBox_button {
         id = is_active and "active_profile_box" or nil,
         label = label,
         shadow = true,
         scale = scale,
-        colour = is_active and G.C.BOOSTER or G.C.UI.TEXT_DARK,--G.C.UI.TEXT_DARK or G.C.BOOSTER,
+        colour = is_active and colour or G.C.UI.TEXT_DARK,--G.C.UI.TEXT_DARK or G.C.BOOSTER,
         text_colour = G.C.UI.TEXT_LIGHT,
         ref_table = profileInfo,
         button = profileInfo.profile_info and "openProfileUi" or "openProfileFolder",
@@ -42,7 +44,7 @@ local function createClickableProfileBox(profileInfo, scale)
             config = {
                 text = profileInfo.profile_info.name,
                 scale = scale,
-                colour = HEX(profileInfo.profile_info.mod_colour),
+                colour = HEX(profileInfo.profile_info.main_colour),
                 shadow = true,
             },
         })
@@ -409,7 +411,7 @@ G.FUNCS.openProfileUi = function(e)
                                 text = profileInfo.profile_info.name,
                                 shadow = true,
                                 scale = scale * 0.9,
-                                colour = HEX(profileInfo.profile_info.mod_colour),
+                                colour = HEX(profileInfo.profile_info.main_colour),
                                 bump = 1
                             }
                         },
@@ -461,7 +463,7 @@ G.FUNCS.openProfileUi = function(e)
                 n = G.UIT.ROOT,
                 config = {
                     emboss = 0.05,
-                    minh = 4,
+                    minh = 5,
                     r = 0.1,
                     minw = 4,
                     align = "tm",
@@ -472,6 +474,8 @@ G.FUNCS.openProfileUi = function(e)
             }
         end
     })
+    local mod_button_colour =  profileInfo.profile_info.secondary_colour and 
+        HEX(profileInfo.profile_info.secondary_colour) or G.C.BOOSTER
     local menu = create_UIBox_generic_options({
         back_func = "exit_confirmation",
         no_back = true,
@@ -481,7 +485,7 @@ G.FUNCS.openProfileUi = function(e)
                 nodes = {
                     create_tabs({
                         snap_to_nav = true,
-                        colour = G.C.BOOSTER,
+                        colour = mod_button_colour,
                         tabs = mod_tabs
                     })
                     
@@ -507,7 +511,7 @@ G.FUNCS.openProfileUi = function(e)
         label = {"Open Folder"},
         shadow = true,
         scale = scale*.7,
-        colour = G.C.BOOSTER,
+        colour = mod_button_colour,
         text_colour = G.C.UI.TEXT_LIGHT,
         ref_table = profileInfo,
         button = "openProfileFolder",
