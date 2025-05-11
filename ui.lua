@@ -1090,40 +1090,117 @@ end
 
 
 -- Techniclly UI
-function G.UIDEF.profile_select()
-    G.focused_profile = G.focused_profile or G.SETTINGS.profile or ModProfiles.profiles_prefix..1
+-- function G.UIDEF.profile_select()
+--     G.focused_profile = G.focused_profile or G.SETTINGS.profile or ModProfiles.profiles_prefix..1
   
-    local t =   create_UIBox_generic_options({padding = 0,contents ={
-        {n=G.UIT.R, config={align = "cm", padding = 0, draw_layer = 1, minw = 4}, nodes={
-            create_tabs(
-          {tabs = {
-              {
-                  label = 1,
-                  chosen = G.focused_profile == ModProfiles.profiles_prefix..1,
-                  tab_definition_function = G.UIDEF.profile_option,
-                  tab_definition_function_args = ModProfiles.profiles_prefix..1
-              },
-              {
-                  label = 2,
-                  chosen = G.focused_profile == ModProfiles.profiles_prefix..2,
-                  tab_definition_function = G.UIDEF.profile_option,
-                  tab_definition_function_args = ModProfiles.profiles_prefix..2
-              },
-              {
-                  label = 3,
-                  chosen = G.focused_profile == ModProfiles.profiles_prefix..3,
-                  tab_definition_function = G.UIDEF.profile_option,
-                  tab_definition_function_args = ModProfiles.profiles_prefix..3
-              }
-          },
-          snap_to_nav = true}),
-        }},
-    }})
-    return t
+--     local t =   create_UIBox_generic_options({padding = 0,contents ={
+--         {n=G.UIT.R, config={align = "cm", padding = 0, draw_layer = 1, minw = 4}, nodes={
+--             create_tabs(
+--           {tabs = {
+--               {
+--                   label = 1,
+--                   chosen = G.focused_profile == ModProfiles.profiles_prefix..1,
+--                   tab_definition_function = G.UIDEF.profile_option,
+--                   tab_definition_function_args = ModProfiles.profiles_prefix..1
+--               },
+--               {
+--                   label = 2,
+--                   chosen = G.focused_profile == ModProfiles.profiles_prefix..2,
+--                   tab_definition_function = G.UIDEF.profile_option,
+--                   tab_definition_function_args = ModProfiles.profiles_prefix..2
+--               },
+--               {
+--                   label = 3,
+--                   chosen = G.focused_profile == ModProfiles.profiles_prefix..3,
+--                   tab_definition_function = G.UIDEF.profile_option,
+--                   tab_definition_function_args = ModProfiles.profiles_prefix..3
+--               }
+--           },
+--           snap_to_nav = true}),
+--         }},
+--     }})
+--     return t
+-- end
+-- function G.UIDEF.profile_select()
+-- 	G.focused_profile = G.focused_profile or G.SETTINGS.profile or (ModProfiles.profiles_prefix .. "1")
+
+-- 	local t = create_UIBox_generic_options({
+-- 		padding = 0,
+-- 		contents = {
+-- 			{
+-- 				n = G.UIT.R,
+-- 				config = { align = "cm", padding = 0, draw_layer = 1, minw = 4 },
+-- 				nodes = {
+-- 					create_tabs({
+-- 						tabs = {
+-- 							{
+-- 								label = ModProfiles.profiles_prefix .. "1",
+-- 								chosen = G.focused_profile == (ModProfiles.profiles_prefix .. "1"),
+-- 								tab_definition_function = G.UIDEF.profile_option,
+-- 								tab_definition_function_args = ModProfiles.profiles_prefix .. "1",
+-- 							},
+-- 							{
+-- 								label = ModProfiles.profiles_prefix .. "2",
+-- 								chosen = G.focused_profile == (ModProfiles.profiles_prefix .. "2"),
+-- 								tab_definition_function = G.UIDEF.profile_option,
+-- 								tab_definition_function_args = ModProfiles.profiles_prefix .. "2",
+-- 							},
+-- 							{
+-- 								label = ModProfiles.profiles_prefix .. "3",
+-- 								chosen = G.focused_profile == (ModProfiles.profiles_prefix .. "3"),
+-- 								tab_definition_function = G.UIDEF.profile_option,
+-- 								tab_definition_function_args = ModProfiles.profiles_prefix .. "3",
+-- 							},
+-- 						},
+-- 						snap_to_nav = true,
+-- 					}),
+-- 				},
+-- 			},
+-- 		},
+-- 	})
+-- 	return t
+-- end
+
+
+function G.UIDEF.profile_select()
+	G.focused_profile = G.focused_profile or G.SETTINGS.profile or (Cryptid.profile_prefix .. "1")
+
+	local t = create_UIBox_generic_options({
+		padding = 0,
+		contents = {
+			{
+				n = G.UIT.R,
+				config = { align = "cm", padding = 0, draw_layer = 1, minw = 4 },
+				nodes = {
+					create_tabs({
+						tabs = {
+							{
+								label = ModProfiles.profiles_prefix:match("/([^/]*)$") .. "1",
+								chosen = G.focused_profile == (ModProfiles.profiles_prefix .. "1"),
+								tab_definition_function = G.UIDEF.profile_option,
+								tab_definition_function_args = ModProfiles.profiles_prefix .. "1",
+							},
+							{
+								label = ModProfiles.profiles_prefix:match("/([^/]*)$") .. "2",
+								chosen = G.focused_profile == (ModProfiles.profiles_prefix .. "2"),
+								tab_definition_function = G.UIDEF.profile_option,
+								tab_definition_function_args = ModProfiles.profiles_prefix .. "2",
+							},
+							{
+								label = ModProfiles.profiles_prefix:match("/([^/]*)$") .. "3",
+								chosen = G.focused_profile == (ModProfiles.profiles_prefix .. "3"),
+								tab_definition_function = G.UIDEF.profile_option,
+								tab_definition_function_args = ModProfiles.profiles_prefix .. "3",
+							},
+						},
+						snap_to_nav = true,
+					}),
+				},
+			},
+		},
+	})
+	return t
 end
-
-
-
 
 ModProfiles.checkEdits = checkEdits
 ModProfiles.UI = {}
