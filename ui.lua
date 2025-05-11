@@ -20,14 +20,9 @@ end
 local function createClickableProfileBox(profileInfo, scale)
     local is_active = profileInfo.name == ModProfiles.active_profile
 
-    local label = { profileInfo.name}
-    if profileInfo.profile_info then
-        print(profileInfo.name)
-        label[1] = string.format("%s; %s ",
-            label[1],
-            profileInfo.profile_info.name
-        )
-        label[2] = string.format("By: %s", table.concat(profileInfo.profile_info.author, ", "))
+    local label = { profileInfo.name , ""}
+    if profileInfo.profile_info then 
+        label[1] = label[1] .. " - "
     end
     local button = UIBox_button {
         id = is_active and "active_profile_box" or nil,
@@ -37,7 +32,7 @@ local function createClickableProfileBox(profileInfo, scale)
         colour = is_active and G.C.BOOSTER or G.C.UI.TEXT_DARK,--G.C.UI.TEXT_DARK or G.C.BOOSTER,
         text_colour = G.C.UI.TEXT_LIGHT,
         ref_table = profileInfo,
-        button = "openProfileUi",--"openProfileFolder",
+        button = profileInfo.profile_info and "openProfileUi" or "openProfileFolder",
         minh = 0.8,
         minw = 5
     }
@@ -45,7 +40,25 @@ local function createClickableProfileBox(profileInfo, scale)
         table.insert(button.nodes[1].nodes[1].nodes, {
             n = G.UIT.T,
             config = {
-                text = ('(%s) '):format(profileInfo.profile_info.version),
+                text = profileInfo.profile_info.name,
+                scale = scale,
+                colour = HEX(profileInfo.profile_info.mod_colour),
+                shadow = true,
+            },
+        })
+        table.insert(button.nodes[1].nodes[1].nodes, {
+            n = G.UIT.T,
+            config = {
+                text = (' (%s) '):format(profileInfo.profile_info.version),
+                scale = scale*0.8,
+                colour = HEX("FFFFFF99"),
+                shadow = true,
+            },
+        })
+        table.insert(button.nodes[1].nodes[2].nodes, {
+            n = G.UIT.T,
+            config = {
+                text = string.format("By: %s", table.concat(profileInfo.profile_info.author, ", ")),
                 scale = scale*0.8,
                 colour = HEX("FFFFFF99"),
                 shadow = true,
@@ -370,90 +383,175 @@ end
 G.FUNCS.openProfileUi = function(e)
     local profileInfo = e.config.ref_table
 
-    local scale = .75*.65
-    local label = {}
-    if profileInfo.profile_info then
-        label[1] = profileInfo.profile_info.name
-    else
-        label[1] = profileInfo.name
-    end
-    local button = UIBox_button {
-        label = label,
+    local mod = G.ACTIVE_MOD_UI
+    if not SMODS.LAST_SELECTED_MOD_TAB then SMODS.LAST_SELECTED_MOD_TAB = "mod_desc" end
+
+    local mod_tabs = {}
+    table.insert(mod_tabs, {
+        label = profileInfo.name,
+        chosen = true,
+        tab_definition_function = function()
+            local modNodes = {}
+            local scale = 0.75 -- Scale factor for text
+            local maxCharsPerLine = 45
+            local wrappedDescription = wrapText(profileInfo.profile_info.description, maxCharsPerLine)
+            local authors_text = string.format("By: %s", table.concat(profileInfo.profile_info.author, ", "))
+
+            table.insert(modNodes, {
+                n = G.UIT.R,
+                config = { align = "cm", r = 0.1, padding = 0.1 },
+                nodes = {
+                    { n = G.UIT.R, config = {align = "cm"}, nodes = {
+                        {n = G.UIT.C, config = {padding = .5}, nodes = { }},
+                        {n = G.UIT.C, config = {padding = .5}, nodes = { }},
+                        { n = G.UIT.T,
+                            config = {
+                                text = profileInfo.profile_info.name,
+                                shadow = true,
+                                scale = scale * 0.9,
+                                colour = HEX(profileInfo.profile_info.mod_colour),
+                                bump = 1
+                            }
+                        },
+                        {n = G.UIT.C, config = {align = "br"}, nodes = {
+                            {n = G.UIT.T,
+                                config = {
+                                    text = (' [%s] '):format(profileInfo.profile_info.version),
+                                    scale = scale*0.6,
+                                    colour = HEX("FFFFFF99"),
+                                    shadow = true,
+                                },
+                            }
+                        }}
+                    }
+                }}
+            })
+            table.insert(modNodes, { 
+                n = G.UIT.R,
+                config = { align = "cm", r = 0.1, emboss = 0.1, },
+                nodes = {
+                    { n = G.UIT.T,
+                        config = {
+                            text = authors_text,
+                            shadow = true,
+                            scale = scale * 0.65,
+                            colour = darken(G.C.UI.TEXT_LIGHT,.3),
+                        }
+                    }
+                }
+            })
+
+
+            table.insert(modNodes, {
+                n = G.UIT.R,
+                config = { padding = 0.1, align = "cm" },
+                nodes = {
+                    { n = G.UIT.T,
+                        config = {
+                            text = wrappedDescription,
+                            shadow = true,
+                            scale = scale * 0.5,
+                            colour = G.C.UI.TEXT_LIGHT
+                        }
+                    }
+                }
+            })  
+            
+            return {
+                n = G.UIT.ROOT,
+                config = {
+                    emboss = 0.05,
+                    minh = 4,
+                    r = 0.1,
+                    minw = 4,
+                    align = "tm",
+                    padding = 0.2,
+                    colour = G.C.BLACK
+                },
+                nodes = modNodes
+            }
+        end
+    })
+    local menu = create_UIBox_generic_options({
+        back_func = "exit_confirmation",
+        no_back = true,
+        contents = {
+            { n = G.UIT.R,
+                config = { padding = 0, align = "tm"  },
+                nodes = {
+                    create_tabs({
+                        snap_to_nav = true,
+                        colour = G.C.BOOSTER,
+                        tabs = mod_tabs
+                    })
+                    
+                }
+            }
+        }
+    })
+    local scale = .75
+    local url_button = UIBox_button {
+        label = {"Website"},
         shadow = true,
-        scale = scale,
+        scale = scale*.7,
+        colour = G.C.SECONDARY_SET.Tarot,
+        text_colour = G.C.UI.TEXT_LIGHT,
+        ref_table = profileInfo,
+        button = "openProfileUrl",
+        minh = 0.7,
+        minw = 3,
+        col=true
+    }
+
+    local folder_button = UIBox_button {
+        label = {"Open Folder"},
+        shadow = true,
+        scale = scale*.7,
         colour = G.C.BOOSTER,
         text_colour = G.C.UI.TEXT_LIGHT,
         ref_table = profileInfo,
         button = "openProfileFolder",
-        minh = 0.8,
-        minw = 5
+        minh = 0.7,
+        minw = 3,
+        col=true
     }
-    local maxCharsPerLine = 45
-    local wrappedDescription = "A custom modpack made by you! (Or one that is missing a profile.lua file....)"
-
-    local authors_text = "By: You!"
-    if profileInfo.profile_info then
-        table.insert(button.nodes[1].nodes[1].nodes, {
-            n = G.UIT.T,
-            config = {
-                text = (' (%s) '):format(profileInfo.profile_info.version),
-                scale = scale*0.8,
-                colour = HEX("FFFFFF99"),
-                shadow = true,
-            },
-        })
-        authors_text = string.format("By: %s", table.concat(profileInfo.profile_info.author, ", "))
-
-        wrappedDescription = profileInfo.profile_info.description
-    end
-    wrappedDescription = wrapText(wrappedDescription, maxCharsPerLine)
-
-
+    table.insert(menu.nodes[1].nodes[1].nodes, {
+        n = G.UIT.R,
+        config = {
+            align = "cm",
+            r = 0.1,
+            padding = 0.1,
+            emboss = 0.1,
+        },
+        nodes = {
+            url_button ,folder_button
+        }
+    })
+    local back_button = UIBox_button {
+        label = {localize('b_back')},
+        shadow = true,
+        scale = scale*.7,
+        colour = G.C.ORANGE,
+        text_colour = G.C.UI.TEXT_LIGHT,
+        button = "exit_confirmation",
+        minh = 0.7,
+        minw = 6.2,
+        col=true
+    }   
+    table.insert(menu.nodes[1].nodes[1].nodes, {
+        n = G.UIT.R,
+        config = {
+            align = "cm",
+            r = 0.1,
+            padding = -0.2,
+            emboss = 0.1,
+        },
+        nodes = {
+            back_button
+        }
+    })
     G.FUNCS.overlay_menu({
-        definition = create_UIBox_generic_options({
-            back_func = "exit_confirmation",
-            contents = {
-                { n = G.UIT.R,
-                    config = { padding = 0, align = "tm"  },
-                    nodes = {
-                        { n = G.UIT.R,
-                            config = { align = "cm", padding = 0.4 },
-                            nodes = {
-                                button
-                            }
-                        },
-                        { n = G.UIT.R,config = { align = "tm", padding = 0.1, r = 1,colour = G.C.BLACK, minh = 3, }, nodes = { 
-                            { n = G.UIT.R,
-                                config = { padding = 0.3, align = "cm", },
-                                nodes = {
-                                    { n = G.UIT.T,
-                                        config = {
-                                            text = authors_text,
-                                            shadow = true,
-                                            scale = scale * .8,
-                                            colour = G.C.UI.TEXT_LIGHT
-                                        }
-                                    }
-                                }
-                            },
-                            { n = G.UIT.R,
-                                config = { padding = 0.3, align = "cm", },
-                                nodes = {
-                                    { n = G.UIT.T,
-                                        config = {
-                                            text = wrappedDescription,
-                                            shadow = true,
-                                            scale = scale * .75,
-                                            colour = G.C.UI.TEXT_LIGHT
-                                        }
-                                    }
-                                }
-                            }
-                        }},
-                    }
-                }
-            }
-        })
+        definition = menu
     })
 end
 
@@ -978,7 +1076,10 @@ G.FUNCS.openProfileFolder = function(e)
     local profileInfo = e.config.ref_table
     love.system.openURL(love.filesystem.getSaveDirectory()..ModProfiles.profiles_dir.."/"..profileInfo.name)
 end
-
+G.FUNCS.openProfileUrl = function(e)
+    local profileInfo = e.config.ref_table
+    love.system.openURL(profileInfo.profile_info.url)
+end
 G.FUNCS.openProfilesDirectory = function(e)
     love.system.openURL(love.filesystem.getSaveDirectory()..ModProfiles.profiles_dir)
 end

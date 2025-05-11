@@ -68,7 +68,6 @@ local function getProfiles()
             count = profile_count + 1
             ModProfiles.profiles[#ModProfiles.profiles+1] = {
                 name = v.name,
-                modtime = v.modtime,
                 mods = {},
                 has_smods=false
             }
@@ -79,10 +78,11 @@ local function getProfiles()
                 if m.type == "directory" then
                     local disabled = love.filesystem.getInfo(ModProfiles.profiles_dir.."/"..v.name.."/"..m.name.."/.lovelyignore")
                     if not disabled then
-                        ModProfiles.profiles[#ModProfiles.profiles].mods[#ModProfiles.profiles[#ModProfiles.profiles].mods+1] = {
-                            mod_name = m.name,
-                            modtime = m.modtime
-                        }
+                        if m.name ~= "lovely" then
+                            ModProfiles.profiles[#ModProfiles.profiles].mods[#ModProfiles.profiles[#ModProfiles.profiles].mods+1] = {
+                                mod_name = m.name,
+                            }
+                        end
 
                         local ok, chunk, err = pcall(love.filesystem.load, ModProfiles.profiles_dir.."/"..v.name.."/"..m.name.."/version.lua")
                         if ok and chunk then
