@@ -3,9 +3,9 @@ Allows the easy switching of many mods! Even SMODs versions.
 
 ### Sections
 
-#### 1) [How to create a Mod Profile?](##how-to-create-a-mod-profile?).
-#### 2) [Save Profiles](##save-profiless).
-#### 3) [For Modpack Creators](##for-modpack-creator).
+#### 1) [How to create a Mod Profile?](#how-to-create-a-mod-profile?).
+#### 2) [Save Profiles](#save-profiless).
+#### 3) [For Modpack Creators](#for-modpack-creator).
 
 ## How to create a Mod Profile?
 
