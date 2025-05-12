@@ -96,7 +96,6 @@ local function getProfiles()
                         if ok and chunk then
                             local profile_info = chunk()
                             ModProfiles.profiles[#ModProfiles.profiles].profile_info = profile_info
-                            print("profile info " .. v.name)
                         end
                     end
                 end
@@ -172,7 +171,6 @@ local function loadProfile(profile)
     end
 
     ModProfiles.active_profile = profile
-    print("loadl " .. profile)
     saveActiveProfileToFile()
 
     recursiveDelete(ModProfiles.mods_dir)
@@ -215,10 +213,6 @@ function Game:update(dt)
         local ret = ModProfiles.io_thread.out:pop();
         ModProfiles.io_thread.proc_count = ModProfiles.io_thread.proc_count-1
         ModProfiles.io_thread.active = ModProfiles.io_thread.proc_count ~= 0
-        if type(ret) == "string" then
-            print(ret .. " " .. tostring(ModProfiles.io_thread.active)); 
-        end
-            print("type " .. type(ret)); 
             -- All tasks done, run ending codes
         if type(ret) == "string" then
             if not ModProfiles.io_thread.active then
@@ -227,7 +221,7 @@ function Game:update(dt)
                 if ModProfiles.restart then SMODS.restart_game() end
             end
         elseif type(ret) == "table" then
-            sendWarnMessage("Loading fucked up chat", "ModProfiles-IO_Thread")
+            sendWarnMessage("Something fucked up chat", "ModProfiles-IO_Thread")
             love.system.setClipboardText(tprint(ret))
             G.FUNCS.overlay_menu({
                 definition = create_UIBox_generic_options({

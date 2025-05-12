@@ -1,6 +1,11 @@
-### Mod Profiles
+# Mod Profiles
 Allows the easy switching of many mods! Even SMODs versions.
 
+### Sections
+
+#### 1) [How to create a Mod Profile?](##how-to-create-a-mod-profile?).
+#### 2) [Save Profiles](##save-profiless).
+#### 3) [For Modpack Creators](##for-modpack-creator).
 
 ## How to create a Mod Profile?
 
@@ -23,6 +28,10 @@ There are 2 ways.
  - Put the desired mods within the folder.
  - Done!
 
+
+## Save Profiles
+Your profiles that you have before installing Mod Profiles will not be touched. Instead, for every profile you have, a new seperate folder will be created.
+All new profiles are stored in `AppData/Balatro/Profiles/<ModpackName>`
 
 
 ## For Modpack Creators

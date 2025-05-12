@@ -560,8 +560,9 @@ G.FUNCS.openProfileUi = function(e)
 end
 
 G.FUNCS.exit_confirmation = function ( args )
-   G.FUNCS.mods_button( args )
-   G.E_MANAGER:add_event(Event({
+    G.FUNCS.exit_overlay_menu()
+    G.FUNCS.mods_button( args )
+    G.E_MANAGER:add_event(Event({
         delay=0.2,
         func = function()
             local tab = G.OVERLAY_MENU:get_UIE_by_ID("tab_but_Profiles")
@@ -670,14 +671,12 @@ function checkEdits(profile)
     for _, m in ipairs(NFS.getDirectoryItemsInfo(ModProfiles.mods_dir)) do
         if (not (m.type == "symlink" or m.name == "lovely" or m.name == ModProfiles.mod_folder)) then
             if not NFS.getInfo(ModProfiles.profiles_dir.."/"..ModProfiles.active_profile.."/"..m.name) then 
-                print(m.name)
                 result = true 
                 modified_mods[#modified_mods+1] = m.name
             else
                 for _, v in ipairs(NFS.getDirectoryItemsInfo(ModProfiles.mods_dir.."/"..m.name)) do
                     if not (v.type == "symlink" or v.name == "lovely") then
                         if not NFS.getInfo(ModProfiles.profiles_dir.."/"..ModProfiles.active_profile.."/"..m.name.."/"..v.name) then 
-                            print(m.name.."/"..v.name)
                             result = true 
                             modified_mods[#modified_mods+1] = m.name
                         end
@@ -693,7 +692,6 @@ end
 G.FUNCS.load_modprofile_ui = function (e)
     local profileInfo = e.config.ref_table
     local is_changed, files = checkEdits(profileInfo.name)
-    print(is_changed)
     local has_smods = profileInfo.has_smods
 
     local main_nodes = {
@@ -974,107 +972,131 @@ end
 G.FUNCS.new_modprofile_ui = function ()
     local value = {name=""}
     G.FUNCS.overlay_menu({definition = 
-    create_UIBox_generic_options({
-        back_func = "exit_confirmation",
-        no_back = true,
-        contents = {
-            {n = G.UIT.R, config = { padding = 0, align = "cm" }, nodes = {
-                {n=G.UIT.R, config={align = "cm", padding = 0.12, emboss = 0.1, colour =darken( G.C.L_BLACK,.2), r = 0.1}, nodes={
-                    {n = G.UIT.T, config = {
-                        id="set_profile_text",
-                        text = "Set Profile Name",
-                        shadow = true,
-                        scale = 0.45,
-                        colour = G.C.EDITION,
-                    }}
-                }},
-                { n = G.UIT.R, config = { align = "cm", padding = 0.3 },
-                        nodes = {
-                            
-                            create_text_input({
-                                ref_table = value, ref_value = 'name'
-                            }), 
-                            
-                    },
-                },
-                {n = G.UIT.R, config = { align = "cm", padding = 0.3 },
-                    nodes = {
-                        UIBox_button({
-                            label = { "Confirm" },
-                            shadow = true, scale = .45,
-                            colour = G.C.GREEN,
-                            ref_table = value,
-                            button = "new_modprofile",
-                            minh = .6, minw = 2.5, col = true
-                        }),
-                        UIBox_button({
-                            label = { "Cancel" },
-                            shadow = true, scale = .45,
-                            colour = G.C.RED,
-                            button = "exit_confirmation",
-                            minh = .6, minw = 2.5, col = true
-                        }),
-                    }
-                },
-            }}
-        }
-    })
-        
-
-})
-G.OVERLAY_MENU:get_UIE_by_ID("set_profile_text").UIBox:recalculate()
-end
-G.FUNCS.new_modprofile = function(args)
-    ModProfiles.createNewProfile(args.config.ref_table.name)
-    G.FUNCS.overlay_menu({
-        definition = create_UIBox_generic_options({
+        create_UIBox_generic_options({
             back_func = "exit_confirmation",
             no_back = true,
             contents = {
-                {
-                    n = G.UIT.R,
-                    config = {
-                        padding = 0,
-                        align = "tm"
+                {n = G.UIT.R, config = { padding = 0, align = "cm" }, nodes = {
+                    {n=G.UIT.R, config={align = "cm", padding = 0.12, emboss = 0.1, colour =darken( G.C.L_BLACK,.2), r = 0.1}, nodes={
+                        {n = G.UIT.T, config = {
+                            id="set_profile_text",
+                            text = "Set Profile Name",
+                            shadow = true,
+                            scale = 0.45,
+                            colour = G.C.EDITION,
+                        }}
+                    }},
+                    { n = G.UIT.R, config = { align = "cm", padding = 0.3 },
+                            nodes = {
+                                
+                                create_text_input({
+                                    ref_table = value, ref_value = 'name', extended_corpus = true
+                                }),
+                        },
                     },
-                    nodes = {
-                        {
-                            n = G.UIT.R,
-                            config = { align = "cm", padding = 0.3 },
-                            nodes = {
-                                {n=G.UIT.O, config={
-                                    object = DynaText({
-                                        string = {"Creating profile..."}, 
-                                        colours = {G.C.UI.TEXT_LIGHT}, 
-                                        shadow = true, 
-                                        float = true,
-                                        spacing = 1.5,
-                                        scale = 0.6,
-                                        silent = true})
-                                }}
-                            }
-                        },
-                        {
-                            n = G.UIT.R,
-                            config = { align = "cm", padding = 0.3 },
-                            nodes = {
-                                {n=G.UIT.O, config={
-                                    object = DynaText({
-                                        string = {"This menu will close automatically.", "You may also click 'Esc', but this can cause issues."}, 
-                                        colours = {G.C.JOKER_GREY}, 
-                                        shadow = true, 
-                                        bump = true,
-                                        spacing = 1,
-                                        scale = 0.45,
-                                        silent = true})
-                                }}
-                            }
-                        },
-                    }
-                }
+                    {
+                        n = G.UIT.R,
+                        config = { align = "cm", padding = 0.0,},
+                        nodes = {
+                            {n=G.UIT.O, config={ 
+                                id="main_fail_check",
+                                
+                                object = DynaText({
+                                    string = {"Profile with name  already exists!"}, 
+                                    colours = {G.C.RED}, 
+                                    shadow = true, 
+                                    float = true,
+                                    spacing = 1,
+                                    scale = 0.4,
+                                    silent = true})
+                            }}
+                        }
+                    },
+                    {n = G.UIT.R, config = { align = "cm", padding = 0.3 },
+                        nodes = {
+                            UIBox_button({
+                                label = { "Confirm" },
+                                shadow = true, scale = .45,
+                                colour = G.C.GREEN,
+                                ref_table = value,
+                                button = "new_modprofile",
+                                minh = .6, minw = 2.5, col = true
+                            }),
+                            UIBox_button({
+                                label = { "Cancel" },
+                                shadow = true, scale = .45,
+                                colour = G.C.RED,
+                                button = "exit_confirmation",
+                                minh = .6, minw = 2.5, col = true
+                            }),
+                        }
+                    },
+                }}
             }
         })
     })
+    G.OVERLAY_MENU:get_UIE_by_ID("set_profile_text").UIBox:recalculate()
+    G.OVERLAY_MENU:get_UIE_by_ID("main_fail_check").states.visible = false
+end
+
+G.FUNCS.new_modprofile = function(args)
+    local profileInfo = args.config.ref_table -- Fake info. Just a name
+
+    if love.filesystem.getInfo(ModProfiles.profiles_dir.."/"..profileInfo.name) then
+        play_sound("voice10", 1)
+        G.OVERLAY_MENU:get_UIE_by_ID("main_fail_check").states.visible = true
+    else
+        ModProfiles.createNewProfile(profileInfo.name)
+        G.FUNCS.overlay_menu({
+            definition = create_UIBox_generic_options({
+                back_func = "exit_confirmation",
+                no_back = true,
+                contents = {
+                    {
+                        n = G.UIT.R,
+                        config = {
+                            padding = 0,
+                            align = "tm"
+                        },
+                        nodes = {
+                            {
+                                n = G.UIT.R,
+                                config = { align = "cm", padding = 0.3 },
+                                nodes = {
+                                    {n=G.UIT.O, config={
+                                        object = DynaText({
+                                            string = {"Creating profile..."}, 
+                                            colours = {G.C.UI.TEXT_LIGHT}, 
+                                            shadow = true, 
+                                            float = true,
+                                            spacing = 1.5,
+                                            scale = 0.6,
+                                            silent = true})
+                                    }}
+                                }
+                            },
+                            {
+                                n = G.UIT.R,
+                                config = { align = "cm", padding = 0.3 },
+                                nodes = {
+                                    {n=G.UIT.O, config={
+                                        object = DynaText({
+                                            string = {"This menu will close automatically.", "You may also click 'Esc', but this can cause issues."}, 
+                                            colours = {G.C.JOKER_GREY}, 
+                                            shadow = true, 
+                                            bump = true,
+                                            spacing = 1,
+                                            scale = 0.45,
+                                            silent = true})
+                                    }}
+                                }
+                            },
+                        }
+                    }
+                }
+            })
+        })
+    end
 end
 G.FUNCS.openProfileFolder = function(e)
     local profileInfo = e.config.ref_table
@@ -1089,81 +1111,9 @@ G.FUNCS.openProfilesDirectory = function(e)
 end
 
 
--- Techniclly UI
--- function G.UIDEF.profile_select()
---     G.focused_profile = G.focused_profile or G.SETTINGS.profile or ModProfiles.profiles_prefix..1
-  
---     local t =   create_UIBox_generic_options({padding = 0,contents ={
---         {n=G.UIT.R, config={align = "cm", padding = 0, draw_layer = 1, minw = 4}, nodes={
---             create_tabs(
---           {tabs = {
---               {
---                   label = 1,
---                   chosen = G.focused_profile == ModProfiles.profiles_prefix..1,
---                   tab_definition_function = G.UIDEF.profile_option,
---                   tab_definition_function_args = ModProfiles.profiles_prefix..1
---               },
---               {
---                   label = 2,
---                   chosen = G.focused_profile == ModProfiles.profiles_prefix..2,
---                   tab_definition_function = G.UIDEF.profile_option,
---                   tab_definition_function_args = ModProfiles.profiles_prefix..2
---               },
---               {
---                   label = 3,
---                   chosen = G.focused_profile == ModProfiles.profiles_prefix..3,
---                   tab_definition_function = G.UIDEF.profile_option,
---                   tab_definition_function_args = ModProfiles.profiles_prefix..3
---               }
---           },
---           snap_to_nav = true}),
---         }},
---     }})
---     return t
--- end
--- function G.UIDEF.profile_select()
--- 	G.focused_profile = G.focused_profile or G.SETTINGS.profile or (ModProfiles.profiles_prefix .. "1")
-
--- 	local t = create_UIBox_generic_options({
--- 		padding = 0,
--- 		contents = {
--- 			{
--- 				n = G.UIT.R,
--- 				config = { align = "cm", padding = 0, draw_layer = 1, minw = 4 },
--- 				nodes = {
--- 					create_tabs({
--- 						tabs = {
--- 							{
--- 								label = ModProfiles.profiles_prefix .. "1",
--- 								chosen = G.focused_profile == (ModProfiles.profiles_prefix .. "1"),
--- 								tab_definition_function = G.UIDEF.profile_option,
--- 								tab_definition_function_args = ModProfiles.profiles_prefix .. "1",
--- 							},
--- 							{
--- 								label = ModProfiles.profiles_prefix .. "2",
--- 								chosen = G.focused_profile == (ModProfiles.profiles_prefix .. "2"),
--- 								tab_definition_function = G.UIDEF.profile_option,
--- 								tab_definition_function_args = ModProfiles.profiles_prefix .. "2",
--- 							},
--- 							{
--- 								label = ModProfiles.profiles_prefix .. "3",
--- 								chosen = G.focused_profile == (ModProfiles.profiles_prefix .. "3"),
--- 								tab_definition_function = G.UIDEF.profile_option,
--- 								tab_definition_function_args = ModProfiles.profiles_prefix .. "3",
--- 							},
--- 						},
--- 						snap_to_nav = true,
--- 					}),
--- 				},
--- 			},
--- 		},
--- 	})
--- 	return t
--- end
-
-
+-- Techniclly UI - Originally wasnt from cryptid, but something odd as fuck broke so here it is
 function G.UIDEF.profile_select()
-	G.focused_profile = G.focused_profile or G.SETTINGS.profile or (Cryptid.profile_prefix .. "1")
+	G.focused_profile = G.focused_profile or G.SETTINGS.profile or (ModProfiles.profiles_prefix .. "1")
 
 	local t = create_UIBox_generic_options({
 		padding = 0,
