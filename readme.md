@@ -2,7 +2,8 @@
 Allows the easy switching of many mods! Even SMODs versions.
 
 #### [Download here](https://github.com/WaffleDevs/ModProfiles/releases#latest)
-
+#### Found an issue?
+Post it in the [thread](https://discord.com/channels/1116389027176787968/1371295581515022387) or on my [Discord](https://discord.gg/fsedA3VfZc)
 <br>
 
 ### Sections
