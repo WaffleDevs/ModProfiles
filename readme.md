@@ -1,6 +1,10 @@
 # Mod Profiles
 Allows the easy switching of many mods! Even SMODs versions.
 
+#### [Download here](https://github.com/WaffleDevs/ModProfiles/releases#latest)
+
+<br>
+
 ### Sections
 
 #### 1) [How to create a Mod Profile?](#how-to-create-a-mod-profile).
@@ -8,7 +12,6 @@ Allows the easy switching of many mods! Even SMODs versions.
 #### 3) [For Modpack Creators](#for-modpack-creators).
 
 ## How to create a Mod Profile?
-
 There are 2 ways. 
 
 #### 1) Ingame.
@@ -27,12 +30,12 @@ There are 2 ways.
  - Create a new folder with a unique name
  - Put the desired mods within the folder.
  - Done!
-
+<br>
 
 ## Save Profiles
 Your profiles that you have before installing Mod Profiles will not be touched. Instead, for every profile you have, a new seperate folder will be created.
 All new profiles are stored in `AppData/Balatro/Profiles/<ModpackName>`
-
+<br>
 
 ## For Modpack Creators
 
