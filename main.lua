@@ -40,6 +40,18 @@ ModProfiles.io_thread = {
     active = false,
     proc_count = 0, -- again.
 }
+
+ModProfiles.config = SMODS.current_mod.config
+SMODS.current_mod.config_tab = function()
+    return {n = G.UIT.ROOT, config = {
+        r = .2, colour = G.C.BLACK
+    }, nodes = {
+        {n = G.UIT.C, config = { padding = .5,}, nodes = {
+            create_toggle({label = "Per Profile Mod Configs", ref_table = ModProfiles.config, ref_value = 'profile_mod_configs', info = {"As name implies. Mod configs are seperate between modpacks."}, active_colour = G.C.RED}) or nil,
+        }}
+    }}
+end
+
 -- From NativeFS Copyright 2020 megagrump@pm.me
 local function getDirectoryItemsInfo(path, filtertype)
     local items = {}
@@ -105,23 +117,25 @@ local function getProfiles()
     end
 end
 
-function recursiveCopy(old_dir, new_dir, depth)
+function recursiveCopy(old_dir, new_dir, no_ui)
     local id = io_channel:push({
         type="copy",
         profile=old_dir,
         copy_params={
             target=new_dir,
-        }
+        }, 
+        no_ui = no_ui
     })
     ModProfiles.io_thread.proc_count = ModProfiles.io_thread.proc_count + 1
 end
-function recursiveDelete(profile_dir, delete_parent, depth)
+function recursiveDelete(profile_dir, delete_parent, no_ui)
     local id = io_channel:push({
         type="delete",
         profile=profile_dir,
         delete_params={
             delete_parent=delete_parent
-        }
+        }, 
+        no_ui = no_ui
     })
     ModProfiles.io_thread.proc_count = ModProfiles.io_thread.proc_count + 1
 end
@@ -151,6 +165,16 @@ local function saveActiveProfileToFile()
     love.filesystem.write(ModProfiles.profiles_dir.."/data", tostring(ModProfiles.active_profile))
 end
 
+local function saveModConfigs()
+    local profile_path = "/Profiles/"..ModProfiles.active_profile.."/config"
+    if not love.filesystem.getInfo(profile_path, "directory") then
+        love.filesystem.createDirectory(profile_path)
+    end
+    print("Saving Config")
+    recursiveDelete(profile_path, nil, true)
+    recursiveCopy("/config", profile_path, true)
+end
+
 
 local function createNewProfile(name) 
     local id = name
@@ -158,6 +182,7 @@ local function createNewProfile(name)
     love.filesystem.createDirectory(profile_path)
     recursiveCopy(ModProfiles.mods_dir, profile_path)
     if not ModProfiles.active_profile then ModProfiles.active_profile = name end
+    love.filesystem.createDirectory(profile_path.."/config")
     saveActiveProfileToFile()
 end
 
@@ -169,15 +194,19 @@ local function loadProfile(profile)
         error("Modprofile doesnt exist: "..profile)
         return
     end
-
     ModProfiles.active_profile = profile
     saveActiveProfileToFile()
 
+    print(love.filesystem.getInfo("/Profiles/"..profile.."/config", "directory"))    
+    if love.filesystem.getInfo("/Profiles/"..profile.."/config", "directory") then
+        recursiveDelete("/config", nil, true)
+        recursiveCopy("/Profiles/"..profile.."/config", "/config", true)
+    end
+
     recursiveDelete(ModProfiles.mods_dir)
-
     recursiveCopy(profile_path, ModProfiles.mods_dir)
-    ModProfiles.restart = true
 
+    ModProfiles.restart = true
 end
 local function deleteProfile(profile)
     local profile_path = ModProfiles.profiles_dir.."/"..profile
@@ -196,6 +225,7 @@ local function deleteProfile(profile)
     recursiveDelete(profile_path,true)
 end
 
+ModProfiles.saveModConfigs = saveModConfigs
 
 ModProfiles.createNewProfile = createNewProfile
 ModProfiles.loadProfile = loadProfile
@@ -203,6 +233,7 @@ ModProfiles.deleteProfile = deleteProfile
 ModProfiles.getProfiles = getProfiles
 
 local old_game_update = Game.update
+local second_count = 0
 function Game:update(dt)
     if ModProfiles.io_thread.thread:getError() then
         error(ModProfiles.io_thread.thread:getError())
@@ -214,13 +245,14 @@ function Game:update(dt)
         ModProfiles.io_thread.proc_count = ModProfiles.io_thread.proc_count-1
         ModProfiles.io_thread.active = ModProfiles.io_thread.proc_count ~= 0
             -- All tasks done, run ending codes
+            print(type(ret))
         if type(ret) == "string" then
             if not ModProfiles.io_thread.active then
                 G.FUNCS.exit_confirmation()
                 play_sound('holo1', 1.5, 1)
                 if ModProfiles.restart then SMODS.restart_game() end
             end
-        elseif type(ret) == "table" then
+        elseif type(ret) == "table" and not ret.no_ui then
             sendWarnMessage("Something fucked up chat", "ModProfiles-IO_Thread")
             love.system.setClipboardText(tprint(ret))
             G.FUNCS.overlay_menu({
@@ -271,8 +303,20 @@ function Game:update(dt)
             })
         end
     end 
-
+    -- if second_count > 10 then
+    --     second_count = 0
+    --     saveModConfigs()
+    -- end
+    -- if ModProfiles.io_thread.proc_count == 0 then
+    --     second_count = second_count + dt
+    -- end 
     old_game_update(self,dt)
+end
+local save_all_config = SMODS.save_all_config
+SMODS.save_all_config = function ()
+    local ret = save_all_config()
+    ModProfiles.saveModConfigs()
+    return ret
 end
 
 love.filesystem.load("Mods/"..ModProfiles.mod_folder.."/ui.lua")()

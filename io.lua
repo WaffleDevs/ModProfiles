@@ -86,6 +86,7 @@ local id = 0
 ---@field profile? string
 ---@field copy_params? {target:string,skip_extra:boolean}
 ---@field delete_params? {delete_parent:boolean}
+---@field no_ui? boolean
 while true do
     --Monitor the channel for any new requests
 
@@ -108,7 +109,8 @@ while true do
         if request.type == "kill" then
             return
         end
-        if type(ret) == "table" and #ret > 0 then
+        if (type(ret) == "table" and #ret > 0) or request.no_ui then
+            if request.no_ui then ret = {no_ui=true} end
             OUT:push(ret)
         else
             OUT:push('Finished Task. Guessed Id: ' .. id)
