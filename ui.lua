@@ -71,9 +71,9 @@ local function createClickableProfileBox(profileInfo, scale)
         label = { localize('b_profile_delete') },
         shadow = true,
         scale = scale*0.85,
-        colour = is_active and darken(G.C.RED, .4) or G.C.RED,
+        colour = is_active and G.C.UI.TEXT_DARK or G.C.RED,
         ref_table = profileInfo,
-        button = "delete_modprofile_ui",
+        button = not is_active and "delete_modprofile_ui" or "",
         minh = scale*1.5,
         minw = 1.3, col = true
     })
@@ -670,13 +670,13 @@ function checkEdits(profile)
     local modified_mods = {}
     for _, m in ipairs(NFS.getDirectoryItemsInfo(ModProfiles.mods_dir)) do
         if (not (m.type == "symlink" or m.name == "lovely" or m.name == ModProfiles.mod_folder)) then
-            if not NFS.getInfo(ModProfiles.profiles_dir.."/"..ModProfiles.active_profile.."/"..m.name) then 
+            if not NFS.getInfo(ModProfiles.main_dir.."/"..ModProfiles.active_profile.."/"..m.name) then 
                 result = true 
                 modified_mods[#modified_mods+1] = m.name
             else
                 for _, v in ipairs(NFS.getDirectoryItemsInfo(ModProfiles.mods_dir.."/"..m.name)) do
                     if not (v.type == "symlink" or v.name == "lovely") then
-                        if not NFS.getInfo(ModProfiles.profiles_dir.."/"..ModProfiles.active_profile.."/"..m.name.."/"..v.name) then 
+                        if not NFS.getInfo(ModProfiles.main_dir.."/"..ModProfiles.active_profile.."/"..m.name.."/"..v.name) then 
                             result = true 
                             modified_mods[#modified_mods+1] = m.name
                         end
@@ -1042,7 +1042,7 @@ end
 G.FUNCS.new_modprofile = function(args)
     local profileInfo = args.config.ref_table -- Fake info. Just a name
 
-    if love.filesystem.getInfo(ModProfiles.profiles_dir.."/"..profileInfo.name) then
+    if love.filesystem.getInfo(ModProfiles.main_dir.."/"..profileInfo.name) then
         play_sound("voice10", 1)
         G.OVERLAY_MENU:get_UIE_by_ID("main_fail_check").states.visible = true
     else
@@ -1098,16 +1098,59 @@ G.FUNCS.new_modprofile = function(args)
         })
     end
 end
+
+G.FUNCS.updated_file_structure = function ()
+    play_sound('voice10', 0.8, 1);
+    G.FUNCS.overlay_menu({definition = 
+        create_UIBox_generic_options({
+            no_back = true,
+            contents = {
+                {n = G.UIT.R, config = { padding = 0, align = "cm" }, nodes = {
+                    {n=G.UIT.R, config={align = "cm", padding = 0.12, r = 0.1}, nodes={
+                        {n = G.UIT.T, config = {
+                            text = "Old ModProfiles installation found.",
+                            shadow = true,
+                            scale = 0.5,
+                            colour = G.C.UI.TEXT_LIGHT,
+                        }}
+                    }},
+                    {n=G.UIT.R, config={align = "cm", padding = 0.12, r = 0.1}, nodes={
+                        {n = G.UIT.T, config = {
+                            text = "Converting file structure to new version.",
+                            shadow = true,
+                            scale = 0.45,
+                            colour = G.C.UI.TEXT_LIGHT,
+                        }}
+                    }},
+                    {n=G.UIT.R, config={align = "cm", padding = 0.12, r = 0.1}, nodes={
+                    }},
+                    {n=G.UIT.R, config={align = "cm", padding = 0.12,  r = 0.1}, nodes={
+                        {n = G.UIT.T, config = {
+                            text = "This may take a while. This menu will close automatically.",
+                            shadow = true,
+                            scale = 0.3,
+                            colour = lighten(G.C.UI.TEXT_INACTIVE,.5),
+                        }}
+                    }},
+                }}
+            }
+        })
+    })
+end
+
+
+
+
 G.FUNCS.openProfileFolder = function(e)
     local profileInfo = e.config.ref_table
-    love.system.openURL(love.filesystem.getSaveDirectory()..ModProfiles.profiles_dir.."/"..profileInfo.name)
+    love.system.openURL(love.filesystem.getSaveDirectory()..ModProfiles.main_dir.."/"..profileInfo.name)
 end
 G.FUNCS.openProfileUrl = function(e)
     local profileInfo = e.config.ref_table
     love.system.openURL(profileInfo.profile_info.url)
 end
 G.FUNCS.openProfilesDirectory = function(e)
-    love.system.openURL(love.filesystem.getSaveDirectory()..ModProfiles.profiles_dir)
+    love.system.openURL(love.filesystem.getSaveDirectory()..ModProfiles.main_dir)
 end
 
 
@@ -1115,6 +1158,10 @@ end
 function G.UIDEF.profile_select()
 	G.focused_profile = G.focused_profile or G.SETTINGS.profile or (ModProfiles.profiles_prefix .. "1")
 
+
+    -- Archipelago
+    if SMODS.Mods["Rando"] and SMODS.Mods["Rando"].can_load then G.AP.profile_Id = 4 end
+    
 	local t = create_UIBox_generic_options({
 		padding = 0,
 		contents = {

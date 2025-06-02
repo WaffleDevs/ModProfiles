@@ -26,7 +26,7 @@ function recursiveCopy(old_dir, new_dir, depth, ret)
     for _, m in ipairs(getDirectoryItemsInfo(old_dir)) do
         local current_dir = old_dir .. "/" .. m.name
         local edit_dir = new_dir .. "/" .. m.name
-        if m.type == "directory" and (m.name ~= mod_name and ((depth==9 and m.name~="lovely") or depth<9)) then
+        if m.type == "directory" and (m.name ~= mod_name and string.sub(m.name, 1, 4) ~= ".mp_" and ((depth==9 and m.name~="lovely") or depth<9)) then
             if love.filesystem.getInfo(current_dir) then
                 love.filesystem.createDirectory(edit_dir)
                 if depth >= 0 then

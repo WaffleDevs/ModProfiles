@@ -34,13 +34,21 @@ position = "at"
 payload = '''
 G.PROFILES = {}
 ModProfiles = ModProfiles or {}
-ModProfiles.profiles_prefix = "Profiles/"
+
+ModProfiles.main_dir = "/mod_profiles"
+ModProfiles.mod_save_profiles_dir = "/.mp_profiles"
+ModProfiles.mod_configs_dir = "/.mp_configs"
+
+ModProfiles.profiles_prefix = ModProfiles.main_dir
 
 local data_info = love.filesystem.getInfo("mod_profiles/data", "file")
 if data_info then
     local data = love.filesystem.read("mod_profiles/data")
-    ModProfiles.profiles_prefix = ModProfiles.profiles_prefix..data.."/"
+    ModProfiles.profiles_prefix = ModProfiles.profiles_prefix.."/"..data..ModProfiles.mod_save_profiles_dir.."/"
+else
+    ModProfiles.profiles_prefix = ModProfiles.profiles_prefix.."/".."Default"..ModProfiles.mod_save_profiles_dir.."/"
 end
+
 
 if Cryptid then 
     Cryptid.profile_prefix = Jen and "J" or "M"
@@ -103,4 +111,16 @@ payload = '''if ModProfiles and ModProfiles.io_thread and ModProfiles.io_thread.
                     type = 'kill'
                 })
             end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = '=[SMODS Rando "randomizer.lua"]'
+pattern = '''G.AP.profile_Id = #G.PROFILES + 1'''
+position = "at"
+payload = '''local count = 0
+for k, v in pairs(G.PROFILES) do
+    count = count + 1
+end
+G.AP.profile_Id = count + 1'''
 match_indent = true
