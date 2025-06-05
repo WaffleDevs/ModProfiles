@@ -317,19 +317,21 @@ function set_main_menu_UI()
                             if p.name == "nil" then p.name = "Default" end
                             local new_dir = ModProfiles.main_dir.."/"..p.name .. ModProfiles.mod_configs_dir
 
-                            recursiveCopy(old_dir, new_dir)
+                            recursiveCopy(old_dir, new_dir, true)
                         else
                             local old_dir = "/Profiles/"..p.name .. "/" .. f.name
                             if p.name == "nil" then p.name = "Default" end
                             local new_dir = ModProfiles.main_dir.."/"..p.name .. ModProfiles.mod_save_profiles_dir..  "/" .. f.name
                             love.filesystem.createDirectory(ModProfiles.main_dir.."/"..p.name .. ModProfiles.mod_save_profiles_dir..  "/" .. f.name)
 
-                            recursiveCopy(old_dir, new_dir)
+                            recursiveCopy(old_dir, new_dir, true)
                         end
                     end
                 end
             end
         end
+        recursiveDelete("/Profiles/", true, true)
+        G.FUNCS.exit_overlay_menu()
     end
     return ret
 end
