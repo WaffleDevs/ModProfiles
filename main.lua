@@ -305,6 +305,31 @@ function set_main_menu_UI()
     local ret = hook_set_main_menu_UI()
     if love.filesystem.getInfo("/Profiles", "directory") then -- Directories hard coded, as they are for older verisons.
         G.FUNCS.updated_file_structure();
+        for _, p in ipairs(getDirectoryItemsInfo("/Profiles")) do
+            if p.type == "directory" then
+                love.filesystem.createDirectory(ModProfiles.main_dir.."/"..p.name .. ModProfiles.mod_configs_dir)
+                love.filesystem.createDirectory(ModProfiles.main_dir.."/"..p.name .. ModProfiles.mod_save_profiles_dir)
+
+                for _, f in ipairs(getDirectoryItemsInfo("/Profiles/"..p.name)) do
+                    if f.type == "directory" then
+                        if f.name == "config" then
+                            local old_dir = "/Profiles/"..p.name .. "/" .. f.name
+                            if p.name == "nil" then p.name = "Default" end
+                            local new_dir = ModProfiles.main_dir.."/"..p.name .. ModProfiles.mod_configs_dir
+
+                            recursiveCopy(old_dir, new_dir)
+                        else
+                            local old_dir = "/Profiles/"..p.name .. "/" .. f.name
+                            if p.name == "nil" then p.name = "Default" end
+                            local new_dir = ModProfiles.main_dir.."/"..p.name .. ModProfiles.mod_save_profiles_dir..  "/" .. f.name
+                            love.filesystem.createDirectory(ModProfiles.main_dir.."/"..p.name .. ModProfiles.mod_save_profiles_dir..  "/" .. f.name)
+
+                            recursiveCopy(old_dir, new_dir)
+                        end
+                    end
+                end
+            end
+        end
     end
     return ret
 end

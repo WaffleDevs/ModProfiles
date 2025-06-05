@@ -1158,10 +1158,29 @@ end
 function G.UIDEF.profile_select()
 	G.focused_profile = G.focused_profile or G.SETTINGS.profile or (ModProfiles.profiles_prefix .. "1")
 
+    local is_archipelago = SMODS.Mods["Rando"] and SMODS.Mods["Rando"].can_load
+    local is_more_profiles = SMODS.Mods["more_profiles"] and SMODS.Mods["more_profiles"].can_load
 
-    -- Archipelago
-    if SMODS.Mods["Rando"] and SMODS.Mods["Rando"].can_load then G.AP.profile_Id = 4 end
-    
+    local profiles_count = is_more_profiles and 10 or 3
+
+    local tabs = {}
+    for i = 1, profiles_count do 
+        tabs[i] = {
+            label = ModProfiles.profiles_prefix:match("/([^/]*)$") .. i,
+            chosen = G.focused_profile == (ModProfiles.profiles_prefix .. i),
+            tab_definition_function = G.UIDEF.profile_option,
+            tab_definition_function_args = ModProfiles.profiles_prefix .. i,
+        }
+    end
+    if is_archipelago then
+        tabs[#tabs+1] = {
+            label = "ARCHIPELAGO",
+            chosen = G.focused_profile == G.AP.profile_Id,
+            tab_definition_function = G.UIDEF.profile_option,
+            tab_definition_function_args = G.AP.profile_Id
+        }
+    end
+
 	local t = create_UIBox_generic_options({
 		padding = 0,
 		contents = {
@@ -1170,27 +1189,9 @@ function G.UIDEF.profile_select()
 				config = { align = "cm", padding = 0, draw_layer = 1, minw = 4 },
 				nodes = {
 					create_tabs({
-						tabs = {
-							{
-								label = ModProfiles.profiles_prefix:match("/([^/]*)$") .. "1",
-								chosen = G.focused_profile == (ModProfiles.profiles_prefix .. "1"),
-								tab_definition_function = G.UIDEF.profile_option,
-								tab_definition_function_args = ModProfiles.profiles_prefix .. "1",
-							},
-							{
-								label = ModProfiles.profiles_prefix:match("/([^/]*)$") .. "2",
-								chosen = G.focused_profile == (ModProfiles.profiles_prefix .. "2"),
-								tab_definition_function = G.UIDEF.profile_option,
-								tab_definition_function_args = ModProfiles.profiles_prefix .. "2",
-							},
-							{
-								label = ModProfiles.profiles_prefix:match("/([^/]*)$") .. "3",
-								chosen = G.focused_profile == (ModProfiles.profiles_prefix .. "3"),
-								tab_definition_function = G.UIDEF.profile_option,
-								tab_definition_function_args = ModProfiles.profiles_prefix .. "3",
-							},
-						},
+						tabs = tabs,
 						snap_to_nav = true,
+                        scale_x = is_more_profiles and 0.5 or nil,
 					}),
 				},
 			},
